@@ -1,9 +1,28 @@
 #include <assert.h>
 #include <da_string.h>
+#include <stdio.h>
 #include <string.h>
 
 string_view sv_new(const char* str, size_t len) {
   return (string_view){.str = str, .len = len};
+}
+
+string_view sv_from_cstr(const char* str) {
+  return (string_view) {.str = str, .len = strlen(str)};
+}
+
+string_view sv_slice_till_delim(string_view sv, char delim) {
+  for (size_t i=0; i<sv.len; i++) {
+    if (sv.str[i] == delim) {
+      return sv_slice(sv, 0, i);
+    }
+  }
+  assert(false && "Delim not found");
+}
+
+string_view sv_slice(string_view sv, size_t start, size_t len) {
+  assert(sv.len >= start + len);
+  return sv_new(sv.str + start, len);
 }
 
 void ds_grow(da_string* ds, size_t cap) {

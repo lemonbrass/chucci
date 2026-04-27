@@ -31,7 +31,10 @@ typedef struct {
   arena* ar;
 } da_string;
 
+string_view sv_from_cstr(const char* str);
 string_view sv_new(const char* str, size_t len);
+string_view sv_slice(string_view sv, size_t pos, size_t len);
+string_view sv_slice_till_delim(string_view sv, char delim);
 da_string ds_new(arena* ar);
 void ds_push(da_string* ds, string_view* sv);
 void ds_push_char(da_string* ds, char ch);
