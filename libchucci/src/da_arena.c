@@ -1,6 +1,6 @@
 #include <da_arena.h>
 
-void arena_mark_reset(arena_mark_t* m, arena* ar) {
+void arena_mark_reset(arena_mark_t* m, arena_t* ar) {
   for (size_t i = m->chunkid + 1; i < kv_size(ar->chunks); i++) {
     kv_A(ar->chunks, i).pos = 0;
   }
@@ -22,8 +22,8 @@ chunk chunk_new(size_t size, uint8_t flags) {
   return ch;
 }
 
-arena* arena_new(size_t size, uint8_t flags) {
-  arena* ar = malloc(sizeof(arena));
+arena_t* new_arena(size_t size, uint8_t flags) {
+  arena_t* ar = malloc(sizeof(arena_t));
   kv_init(ar->chunks);
   kv_init(ar->allocs);
   ar->flags = flags;
@@ -34,7 +34,7 @@ arena* arena_new(size_t size, uint8_t flags) {
   return ar;
 }
 
-arena_mark_t arena_mark(arena* ar) {
+arena_mark_t arena_mark(arena_t* ar) {
   arena_mark_t m;
   chunk* ch = &kv_A(ar->chunks, kv_size(ar->chunks)-1);
   m.pos = ch->pos;
@@ -43,7 +43,7 @@ arena_mark_t arena_mark(arena* ar) {
   return m;
 }
 
-chunk* get_arena_chunk(arena* ar, size_t size) {
+chunk* get_arena_chunk(arena_t* ar, size_t size) {
   if (!(ar->flags & ARENA_RELIABLE_MARK)) {
     size_t id = ar->minempty;
     while (1) {
@@ -74,7 +74,7 @@ chunk* get_arena_chunk(arena* ar, size_t size) {
   }
 }
 
-void* arena_alloc(arena* ar, size_t size) {
+void* arena_alloc(arena_t* ar, size_t size) {
   size_t a_size = ALIGN_UP(size, alignof(max_align_t));
   if (a_size >= ar->size) {
     void* mem = malloc(size);
@@ -94,7 +94,7 @@ void chunk_free(chunk* ch) {
   ch->pos = 0;
 }
 
-void arena_free(arena* ar) {
+void arena_free(arena_t* ar) {
   for (size_t i = 0; i < kv_size(ar->chunks); i++) {
     chunk_free(&kv_A(ar->chunks, i));
   }
@@ -105,7 +105,7 @@ void arena_free(arena* ar) {
   free(ar);
 }
 
-void arena_reset(arena* ar) {
+void arena_reset(arena_t* ar) {
   for (size_t i = 0; i < kv_size(ar->chunks); i++) {
     chunk* ch = &kv_A(ar->chunks, i);
     ch->pos = 0;

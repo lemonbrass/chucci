@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-string_view sv_new(const char* str, size_t len) {
+string_view new_sv(const char* str, size_t len) {
   return (string_view){.str = str, .len = len};
 }
 
@@ -22,7 +22,7 @@ string_view sv_slice_till_delim(string_view sv, char delim) {
 
 string_view sv_slice(string_view sv, size_t start, size_t len) {
   assert(sv.len >= start + len);
-  return sv_new(sv.str + start, len);
+  return new_sv(sv.str + start, len);
 }
 
 void ds_grow(da_string* ds, size_t cap) {
@@ -32,7 +32,7 @@ void ds_grow(da_string* ds, size_t cap) {
   ds->str = new_str;
 }
 
-da_string ds_new(arena* ar) {
+da_string new_ds(arena_t* ar) {
   da_string ds = {0};
   ds.ar = ar;
   return ds;
@@ -55,7 +55,7 @@ void ds_push_char(da_string* ds, char ch) {
 
 // doesnt alloc, borrowed string view
 string_view dstosv(da_string* ds) {
-  return sv_new(ds->str, ds->len);
+  return new_sv(ds->str, ds->len);
 }
 
 // allocates a new string

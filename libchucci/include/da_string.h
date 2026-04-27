@@ -28,14 +28,14 @@ typedef struct {
   char* str;
   size_t len;
   size_t cap;
-  arena* ar;
+  arena_t* ar;
 } da_string;
 
 string_view sv_from_cstr(const char* str);
-string_view sv_new(const char* str, size_t len);
+string_view new_sv(const char* str, size_t len);
 string_view sv_slice(string_view sv, size_t pos, size_t len);
 string_view sv_slice_till_delim(string_view sv, char delim);
-da_string ds_new(arena* ar);
+da_string new_ds(arena_t* ar);
 void ds_push(da_string* ds, string_view* sv);
 void ds_push_char(da_string* ds, char ch);
 void ds_grow(da_string* ds, size_t cap);

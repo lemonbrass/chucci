@@ -38,16 +38,16 @@ typedef struct {
   size_t size;
   size_t minempty;
   uint8_t flags;
-} arena;
+} arena_t;
 
 // work reliably only with ARENA_RELIABLE_MARK 
-void arena_mark_reset(arena_mark_t* m, arena* ar);
-arena_mark_t arena_mark(arena* ar);
+void arena_mark_reset(arena_mark_t* m, arena_t* ar);
+arena_mark_t arena_mark(arena_t* ar);
 
-arena* arena_new(size_t size, uint8_t flags);
+arena_t* new_arena(size_t size, uint8_t flags);
 chunk chunk_new(size_t size, uint8_t flags);
-void* arena_alloc(arena* ar, size_t size);
-void arena_free(arena* ar);
-void arena_reset(arena* ar);
+void* arena_alloc(arena_t* ar, size_t size);
+void arena_free(arena_t* ar);
+void arena_reset(arena_t* ar);
 
 #endif
