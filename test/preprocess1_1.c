@@ -20,7 +20,7 @@ void preprocess1_1(jmp_buf errbuf) {
   kv_push(string_view, pp1.include_dirs, cwd);
   string_view result = resolve_pp1(&pp1);
   
-  printf("Preprocessor1 result: %.*s\n", (int)result.len, result.str);
+  printf("Preprocessor1 result: \n%.*s\n", (int)result.len, result.str);
   
   free_path(&cwdpath);
   free_sv(&cwd);

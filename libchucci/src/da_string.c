@@ -39,7 +39,7 @@ da_string new_ds() {
 
 void ds_push(da_string* ds, string_view* sv) {
   size_t cap = (ds->cap == 0) ? DS_DEFAULT_CAPACITY : ds->cap;
-  if (cap <= ds->len + sv->len) cap *= 2;
+  while (cap <= ds->len + sv->len + 1) cap *= 2;
   if (cap != ds->cap) ds_grow(ds, cap);
 
   strncpy(ds->str + ds->len, sv->str, sv->len);
@@ -47,7 +47,7 @@ void ds_push(da_string* ds, string_view* sv) {
 }
 
 void ds_push_char(da_string* ds, char ch) {
-  if (ds->cap <= ds->len + 1) ds_grow(ds, ds->cap*2);
+  while (ds->cap <= ds->len + 1) ds_grow(ds, ds->cap*2);
   ds->str[ds->len] = ch;
   ds->len++;
 }

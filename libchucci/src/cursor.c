@@ -24,6 +24,10 @@ string_view get_current_line(Cursor* cursor) {
   return sv_slice(cursor->source, start, end-start);
 }
 
+void advance_cursor_by(Cursor* cursor, size_t n) {
+  while (n-- > 0) advance_cursor(cursor);
+}
+
 void skip_whitespace(Cursor* cursor) {
   while (isspace((unsigned char)peek(cursor))) {
     advance_cursor(cursor);

@@ -37,6 +37,7 @@ Cursor new_cursor(string_view source);
 
 // returns current character and advances
 char advance_cursor(Cursor* cursor);
+void advance_cursor_by(Cursor* cursor, size_t n);
 
 bool is_cursor_valid(Cursor* cursor);
 void skip_whitespace(Cursor* cursor);

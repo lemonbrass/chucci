@@ -28,7 +28,7 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
       free_sv(&contents);
       free_ds(&builder);
       free_path(&path);
-      break;
+      return;
     }
     
     free_ds(&builder);
@@ -44,15 +44,15 @@ void resolve_include(Preprocessor1* pp1) {
     case '\"': {
       ch_match_cursor(&pp1->cursor, '\"');
       string_view filename = get_till_delim(&pp1->cursor, '\"');
-      printf("Found #include \"%.*s\"\n", (int)filename.len, filename.str);
       open_included_file(pp1, filename);
+      advance_cursor_by(&pp1->cursor, filename.len+1); // skip filename and the closing "
       break;
     }
     case '<': {
       ch_match_cursor(&pp1->cursor, '<');
       string_view filename = get_till_delim(&pp1->cursor, '>');
-      printf("Found #include <%.*s>\n", (int)filename.len, filename.str);
       open_included_file(pp1, filename);
+      advance_cursor_by(&pp1->cursor, filename.len+1); // skip filename and closing >
       break;
     }
     default:
@@ -79,7 +79,6 @@ string_view resolve_pp1(Preprocessor1* pp1) {
     }
     advance_cursor(&pp1->cursor);
   }
-  printf("LESS GOOOO\n");
   string_view str = ds_build(&pp1->builder);
   free_ds(&pp1->builder);
   return str;
