@@ -1,14 +1,41 @@
+#include <da_path.h>
+#include <thirdparty/kvec.h>
 #include <cursor.h>
 #include <da_string.h>
 #include <preprocess_1.h>
 
 
-Preprocessor1 new_pp1(string_view source, arena_t* arena) {
+Preprocessor1 new_pp1(string_view source) {
   Preprocessor1 pp1 = {0};
+  kv_init(pp1.include_dirs);
   pp1.cursor = new_cursor(source);
-  pp1.builder = new_ds(arena);
-  pp1.arena = arena;
+  pp1.builder = new_ds();
   return pp1;
+}
+
+void open_included_file(Preprocessor1* pp1, string_view file) {
+  for (size_t i=0; i<kv_size(pp1->include_dirs); i++) {
+    string_view dir = kv_A(pp1->include_dirs, i);
+    da_string builder = new_ds();
+    ds_push(&builder, &dir);
+    ds_push_char(&builder, '/');
+    ds_push(&builder, &file);
+    Path path = new_path(ds_to_sv(&builder));
+    
+    if (path_exists(&path)) {
+      string_view contents = read_file(&path);
+      ds_push(&pp1->builder, &contents);
+      free_sv(&contents);
+      free_ds(&builder);
+      free_path(&path);
+      break;
+    }
+    
+    free_ds(&builder);
+    free_path(&path);
+  }
+
+  assert(false && "Included file not found");
 }
 
 void resolve_include(Preprocessor1* pp1) {
@@ -18,14 +45,14 @@ void resolve_include(Preprocessor1* pp1) {
       ch_match_cursor(&pp1->cursor, '\"');
       string_view filename = get_till_delim(&pp1->cursor, '\"');
       printf("Found #include \"%.*s\"\n", (int)filename.len, filename.str);
-      assert(false && "TODO");
+      open_included_file(pp1, filename);
       break;
     }
     case '<': {
       ch_match_cursor(&pp1->cursor, '<');
       string_view filename = get_till_delim(&pp1->cursor, '>');
       printf("Found #include <%.*s>\n", (int)filename.len, filename.str);
-      assert(false && "TODO");
+      open_included_file(pp1, filename);
       break;
     }
     default:
@@ -52,5 +79,8 @@ string_view resolve_pp1(Preprocessor1* pp1) {
     }
     advance_cursor(&pp1->cursor);
   }
-  return ds_build(&pp1->builder);
+  printf("LESS GOOOO\n");
+  string_view str = ds_build(&pp1->builder);
+  free_ds(&pp1->builder);
+  return str;
 }

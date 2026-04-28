@@ -26,15 +26,14 @@ string_view sv_slice(string_view sv, size_t start, size_t len) {
 }
 
 void ds_grow(da_string* ds, size_t cap) {
-  char* new_str = arena_alloc(ds->ar, cap);
+  char* new_str = realloc(ds->str, cap);
+  assert(new_str != NULL);
   ds->cap = cap;
-  strncpy(new_str, ds->str, ds->len);
   ds->str = new_str;
 }
 
-da_string new_ds(arena_t* ar) {
+da_string new_ds() {
   da_string ds = {0};
-  ds.ar = ar;
   return ds;
 }
 
@@ -54,19 +53,28 @@ void ds_push_char(da_string* ds, char ch) {
 }
 
 // doesnt alloc, borrowed string view
-string_view dstosv(da_string* ds) {
+string_view ds_to_sv(da_string* ds) {
   return new_sv(ds->str, ds->len);
 }
 
 // allocates a new string
 string_view ds_build(da_string* ds) {
   string_view sv;
-  char* str = arena_alloc(ds->ar, ds->len);
+  char* str = malloc(ds->len+1);
+  assert(str != NULL);
   strncpy(str, ds->str, ds->len);
   sv.len = ds->len;
   sv.str = str;
   return sv;
 }
 
+void free_ds(da_string* ds) {
+  free(ds->str);
+  *ds = (da_string){0};
+}
 
+void free_sv(string_view* sv) {
+  free((void*)sv->str);
+  *sv = (string_view){0};
+}
 
