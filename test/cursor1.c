@@ -16,7 +16,7 @@ void cursor1(jmp_buf buf) {
   dump_cursor(&c);
 
   string_view result = get_till_newline_or_eof(&c);
-  if (!s_cmp(result, sv_from_cstr("bonjour, "))) {
+  if (!s_cmp(result, sv_from_cstr("bonjour, \n"))) {
     longjmp(buf, 1);
   }
 }

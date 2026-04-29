@@ -36,5 +36,6 @@ void preprocess1_1(jmp_buf errbuf) {
   if (s_cmp(expected, result)) longjmp(errbuf, 1);
   
   free_ctx(&ctx);
+  free_sv(&result);
 }
 
