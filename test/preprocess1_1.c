@@ -31,7 +31,7 @@ void preprocess1_1(jmp_buf errbuf) {
   
   string result = resolve_pp1(&pp1);
   
-  printf("Preprocessor1 result: \n[%.*s]\n expected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
+  printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
 
   if (s_cmp(expected, result)) longjmp(errbuf, 1);
   

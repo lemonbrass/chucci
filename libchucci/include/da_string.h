@@ -2,9 +2,10 @@
 #define DA_STRING_H
 
 #include <stdint.h>
-#ifndef DS_DEFAULT_CAPACITY
-#define DS_DEFAULT_CAPACITY 8
+#ifndef DS_SSO_CAP
+#define DS_SSO_CAP 16
 #endif
+#define DS_DEFAULT_CAPACITY DS_SSO_CAP
 
 #include <da_arena.h>
 #include <stdbool.h>
@@ -26,7 +27,10 @@ typedef struct {
 
 // Mutable and owns the memory
 typedef struct {
-  char* cstr;
+  union {
+    char* _cstr;
+    char _sso[DS_SSO_CAP];
+  };
   size_t len;
   size_t cap;
 } da_string;
@@ -49,6 +53,8 @@ string_view sv_slice_till_delim(string_view sv, char delim);
 string new_str(const char* owned, size_t len);
 string_view new_sv(const char* str, size_t len);
 da_string new_ds();
+
+char* get_cstr_from_ds(da_string* ds);
 
 void reset_ds(da_string* ds);
 void push_ds(da_string* ds, string_view sv);
