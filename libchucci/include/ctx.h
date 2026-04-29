@@ -1,0 +1,17 @@
+#ifndef CTX_H
+#define CTX_H
+
+#include <da_path.h>
+#include <da_string.h>
+#include <stddef.h>
+#include <thirdparty/kvec.h>
+
+
+typedef struct {
+  kvec_t(string_view) include_dirs;
+  kvec_t(Path) included_files;
+} CompilerCtx;
+
+CompilerCtx new_ctx();
+
+#endif

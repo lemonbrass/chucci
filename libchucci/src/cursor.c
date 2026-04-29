@@ -34,6 +34,12 @@ void skip_whitespace(Cursor* cursor) {
   }
 }
 
+void skip_whitespace_except_newline(Cursor* cursor) {
+  while (isspace((unsigned char)peek(cursor)) && peek(cursor) != '\n') {
+    advance_cursor(cursor);
+  }
+}
+
 string_view get_till_delim(Cursor* cursor, char delim) {
   size_t start = cursor->id;
   size_t end = cursor->id;

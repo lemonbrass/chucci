@@ -20,8 +20,12 @@ char peek_next(Cursor *c);
 // match current character with expected one
 // and advance if match is found,
 // else just return false without advancing
-bool ch_match_cursor(Cursor *c, char expected);
-bool str_match_cursor(Cursor *c, string_view expected);
+bool ch_match_cursor(Cursor *cursor, char expected);
+bool str_match_cursor(Cursor *cursor, string_view expected);
+
+// *_match_cursor counterparts that assert(match)
+#define ch_expect_cursor(cursor, expected) assert(ch_match_cursor(cursor, expected))
+#define str_expect_cursor(cursor, expected) assert(str_match_cursor(cursor, expected))
 
 string_view get_current_line(Cursor* cursor);
 
@@ -43,6 +47,7 @@ void advance_cursor_by(Cursor* cursor, size_t n);
 
 bool is_cursor_valid(Cursor* cursor);
 void skip_whitespace(Cursor* cursor);
+void skip_whitespace_except_newline(Cursor* cursor);
 /*
 * Get the string starting from the current position till the delimiter
 * Returns string_view(NULL, 0) if delim not found

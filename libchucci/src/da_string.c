@@ -31,6 +31,7 @@ string_view sv_slice(string_view sv, size_t start, size_t len) {
 }
 
 void ds_grow(da_string* ds, size_t cap) {
+  assert(cap!=0 && cap != ds->cap);
   char* new_str = realloc(ds->str, cap);
   assert(new_str != NULL);
   ds->cap = cap;
@@ -52,7 +53,8 @@ void ds_push(da_string* ds, string_view* sv) {
 }
 
 void ds_push_char(da_string* ds, char ch) {
-  while (ds->cap <= ds->len + 1) ds_grow(ds, ds->cap*2);
+  size_t cap = (ds->cap == 0) ? DS_DEFAULT_CAPACITY : ds->cap;
+  while (ds->cap <= ds->len + 1) ds_grow(ds, cap*2);
   ds->str[ds->len] = ch;
   ds->len++;
 }
