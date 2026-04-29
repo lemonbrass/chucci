@@ -13,5 +13,6 @@ typedef struct {
 } CompilerCtx;
 
 CompilerCtx new_ctx();
+void free_ctx(CompilerCtx* ctx);
 
 #endif

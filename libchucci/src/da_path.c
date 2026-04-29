@@ -7,13 +7,24 @@
 
 
 Path new_path(string_view pathstr) {
-  Path p;
+  Path p = {0};
   p.str = malloc(pathstr.len + 1);
   p.len = pathstr.len;
   assert(p.str != NULL);
   strncpy(p.str, pathstr.str, pathstr.len);
   p.str[pathstr.len] = '\0';
   return p;
+}
+
+Path new_path_from_cstr(char* pathstr) {
+  Path p = {0};
+  p.len = strlen(pathstr);
+  p.str = strdup(pathstr);
+  return p;
+}
+
+bool path_cmp(Path* path1, Path* path2) {
+  return path1->len == path2->len && strcmp(path1->str, path2->str);
 }
 
 string_view path_to_sv(Path* path) {

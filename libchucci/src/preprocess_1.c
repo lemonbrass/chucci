@@ -11,8 +11,14 @@ Preprocessor1 new_pp1(string_view source, CompilerCtx* ctx) {
   pp1.cursor = new_cursor(source);
   pp1.builder = new_ds();
   pp1.ctx = ctx;
-  printf("New Preprocessor1: [%.*s]\n", (int)source.len, source.str);
   return pp1;
+}
+
+void check_cyclic_includes(Preprocessor1* pp1, Path path) {
+  for (size_t i = 0; i < kv_size(pp1->ctx->included_files); i++) {
+    Path path2 = kv_A(pp1->ctx->included_files, i);
+    assert(!path_cmp(&path, &path2) && "Cyclic include detected");
+  }
 }
 
 void open_included_file(Preprocessor1* pp1, string_view file) {
@@ -32,7 +38,8 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
       free_sv(&contents);
       free_sv(&processed);
       free_ds(&builder);
-      free_path(&path);
+
+      kv_push(Path, pp1->ctx->included_files, path);
       return;
     }
     ds_reset(&builder);
@@ -69,7 +76,6 @@ void resolve_include(Preprocessor1* pp1) {
 
 string_view resolve_pp1(Preprocessor1* pp1) {
   while (is_cursor_valid(&pp1->cursor)) {
-    dump_cursor(&pp1->cursor);
     char current = peek(&pp1->cursor);
     switch (current) {
       case '#': {

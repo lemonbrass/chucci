@@ -15,12 +15,15 @@ typedef enum {
   PATH_INVALID,
 } PathType;
 
-Path new_path(string_view path);
+Path new_path(string_view pathstr);
+Path new_path_from_cstr(char* pathstr);
 string_view get_absolute_path(Path* path);
 bool is_path_absolute(Path* path);
 bool is_path_relative(Path* path);
 bool path_exists(Path* path);
 PathType get_path_type(Path* path);
+
+bool path_cmp(Path* path1, Path* path2);
 
 // these ALL malloc string_views
 string_view get_path_directory(Path* path);

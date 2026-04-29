@@ -48,7 +48,7 @@ void ds_push(da_string* ds, string_view* sv) {
   while (cap <= ds->len + sv->len + 1) cap *= 2;
   if (cap != ds->cap) ds_grow(ds, cap);
 
-  strncpy(ds->str + ds->len, sv->str, sv->len);
+  memcpy(ds->str + ds->len, sv->str, sv->len);
   ds->len += sv->len;
 }
 
@@ -69,7 +69,7 @@ string_view ds_build(da_string* ds) {
   string_view sv;
   char* str = malloc(ds->len+1);
   assert(str != NULL);
-  strncpy(str, ds->str, ds->len);
+  memcpy(str, ds->str, ds->len);
   sv.len = ds->len;
   sv.str = str;
   return sv;

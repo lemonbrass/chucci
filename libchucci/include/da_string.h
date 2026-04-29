@@ -14,10 +14,10 @@
 
 #define s_len(str) str.len
 #define s_print(s) printf("%.*s", (int)s.len, s.str)
-#define s_cmp(str1, str2) (((str1).len != (str2).len) ? false : (strncmp((str1).str, (str2).str, (str1).len) == 0))
+#define s_cmp(str1, str2) (((str1).len != (str2).len) && (memcmp((str1).str, (str2).str, (str1).len) == 0))
 #define s_str(s) s.str
 #define s_free(s) do { free(s->str); *s = (typeof(*s)){0}; } while (0)
-#define cs_cmp(sv_sd, cstr) (strlen(cstr) == sv_sd.len)&&(strncmp(sv_sd.str, cstr, strlen(cstr)) == 0)
+#define cs_cmp(sv_sd, cstr) (strlen(cstr) == sv_sd.len)&&(memcmp(sv_sd.str, cstr, sv_sd.len) == 0)
 
 typedef struct {
   const char* str;
