@@ -17,7 +17,6 @@ THIS WILL ONLY RESOLVE #include AND comments
 
 typedef struct {
   Cursor cursor;
-  da_string builder;
   CompilerCtx* ctx;
 } Preprocessor1;
 

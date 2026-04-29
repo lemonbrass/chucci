@@ -1,10 +1,12 @@
-#include "da_path.h"
-#include "thirdparty/kvec.h"
+#include <da_path.h>
+#include <da_string.h>
+#include <thirdparty/kvec.h>
 #include <ctx.h>
 
 
 CompilerCtx new_ctx() {
   CompilerCtx ctx = {0};
+  ctx.buf = new_ds();
   kv_init(ctx.include_dirs);
   kv_init(ctx.included_files);
   return ctx;
@@ -19,4 +21,5 @@ void free_ctx(CompilerCtx* ctx) {
   }
   kv_destroy(ctx->include_dirs);
   kv_destroy(ctx->included_files);
+  free_ds(&ctx->buf);
 }

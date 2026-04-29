@@ -10,6 +10,7 @@
 typedef struct {
   kvec_t(string_view) include_dirs;
   kvec_t(Path) included_files;
+  da_string buf; // for internal memory reuse
 } CompilerCtx;
 
 CompilerCtx new_ctx();

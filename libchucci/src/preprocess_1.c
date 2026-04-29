@@ -9,7 +9,6 @@
 Preprocessor1 new_pp1(string_view source, CompilerCtx* ctx) {
   Preprocessor1 pp1 = {0};
   pp1.cursor = new_cursor(source);
-  pp1.builder = new_ds();
   pp1.ctx = ctx;
   return pp1;
 }
@@ -34,7 +33,7 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
       string_view contents = read_file(&path);
       Preprocessor1 child = new_pp1(contents, pp1->ctx);
       string_view processed = resolve_pp1(&child);
-      ds_push(&pp1->builder, &processed);
+      ds_push(&pp1->ctx->buf, &processed);
       free_sv(&contents);
       free_sv(&processed);
       free_ds(&builder);
@@ -129,12 +128,12 @@ string_view resolve_pp1(Preprocessor1* pp1) {
       }
       default: {
         default_body:
-          ds_push_char(&pp1->builder, current);
+          ds_push_char(&pp1->ctx->buf, current);
           advance_cursor(&pp1->cursor);
       }
     }
   }
-  string_view str = ds_build(&pp1->builder);
-  free_ds(&pp1->builder);
+  string_view str = ds_build(&pp1->ctx->buf);
+  ds_reset(&pp1->ctx->buf);
   return str;
 }
