@@ -14,11 +14,11 @@
 */
 string_view get_current_line(Cursor* cursor) {
   size_t start = cursor->id;
-  while (start > 0 && cursor->source.str[start - 1] != '\n') {
+  while (start > 0 && cursor->source.cstr[start - 1] != '\n') {
     start--;
   }
   size_t end = cursor->id;
-  while (end < cursor->source.len && cursor->source.str[end] != '\n') {
+  while (end < cursor->source.len && cursor->source.cstr[end] != '\n') {
     end++;
   }
   return sv_slice(cursor->source, start, end-start);
@@ -43,7 +43,7 @@ void skip_whitespace_except_newline(Cursor* cursor) {
 string_view get_till_delim(Cursor* cursor, char delim) {
   size_t start = cursor->id;
   size_t end = cursor->id;
-  while (end < cursor->source.len && cursor->source.str[end] != delim) {
+  while (end < cursor->source.len && cursor->source.cstr[end] != delim) {
     end++;
   }
   return sv_slice(cursor->source, start, end-start);
@@ -51,7 +51,7 @@ string_view get_till_delim(Cursor* cursor, char delim) {
 
 string_view get_till_newline_or_eof(Cursor* cursor) {
   string_view sv = get_till_delim(cursor, '\n');
-  if (sv.len == 0 && sv.str == NULL) {
+  if (sv.len == 0 && sv.cstr == NULL) {
     return sv_slice(cursor->source, cursor->id, cursor->source.len-cursor->id);
   }
   return sv;
@@ -59,7 +59,7 @@ string_view get_till_newline_or_eof(Cursor* cursor) {
 
 char peek(Cursor* cursor) {
   assert(is_cursor_valid(cursor));
-  return cursor->source.str[cursor->id];
+  return cursor->source.cstr[cursor->id];
 }
 
 Cursor new_cursor(string_view source) {
@@ -85,7 +85,7 @@ char advance_cursor(Cursor* cursor) {
 
 char peek_next(Cursor *cursor) {
   assert(cursor->source.len > cursor->id + 1);
-  return cursor->source.str[cursor->id+1];
+  return cursor->source.cstr[cursor->id+1];
 }
 
 Cursor mark_cursor(Cursor* cursor) {
@@ -101,7 +101,7 @@ bool str_match_cursor(Cursor *cursor, string_view expected) {
   Cursor mark = *cursor;
   for (size_t i=0; i<expected.len; i++) {
     char ch = advance_cursor(&mark);
-    if (expected.str[i] != ch) return false;
+    if (expected.cstr[i] != ch) return false;
   }
   *cursor = mark;
   return true;
@@ -119,7 +119,7 @@ bool is_cursor_valid(Cursor* cursor) {
 void dump_cursor(Cursor* c) {
   string_view currline = get_current_line(c);
   int prefix = printf("Cursor at (line = %zu, col = %zu): ", c->line, c->col);
-  printf("%.*s\n", (int)currline.len, currline.str);
+  printf("%.*s\n", (int)currline.len, currline.cstr);
   for (size_t i=0; i < (c->col-1+prefix); i++) printf(" ");
   printf("^\n");
 }

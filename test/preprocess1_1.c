@@ -25,17 +25,17 @@ void preprocess1_1(jmp_buf errbuf) {
       "}\n"
   );
   CompilerCtx ctx = new_ctx();
-  kv_push(string_view, ctx.include_dirs, sv_from_cstr(strdup("."))); // CTX FREES string_view LATER, SO WE NEED MALLOCED MEMORY
+  kv_push(string, ctx.include_dirs, new_str(strdup("."), 1)); // CTX FREES string_view LATER, SO WE NEED MALLOCED MEMORY
   
   Preprocessor1 pp1 = new_pp1(source, &ctx);
   
-  string_view result = resolve_pp1(&pp1);
+  string result = resolve_pp1(&pp1);
   
-  printf("Preprocessor1 result: \n[%.*s]\n expected: \n[%.*s]\n", (int)result.len, result.str, (int)expected.len, expected.str);
+  printf("Preprocessor1 result: \n[%.*s]\n expected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
 
   if (s_cmp(expected, result)) longjmp(errbuf, 1);
   
   free_ctx(&ctx);
-  free_sv(&result);
+  free_str(&result);
 }
 

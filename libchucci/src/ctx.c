@@ -17,7 +17,7 @@ void free_ctx(CompilerCtx* ctx) {
     free_path(&kv_A(ctx->included_files, i));
   }
   for (size_t i = 0; i < kv_size(ctx->include_dirs); i++) {
-    free_sv(&kv_A(ctx->include_dirs, i));
+    free_str(&kv_A(ctx->include_dirs, i));
   }
   kv_destroy(ctx->include_dirs);
   kv_destroy(ctx->included_files);

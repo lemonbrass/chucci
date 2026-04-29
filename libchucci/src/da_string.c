@@ -3,22 +3,42 @@
 #include <stdio.h>
 #include <string.h>
 
-string_view new_sv(const char* str, size_t len) {
-  return (string_view){.str = str, .len = len};
+string_view new_sv(const char* cstr, size_t len) {
+  return (string_view){.cstr = cstr, .len = len};
 }
 
-string_view sv_from_cstr(const char* str) {
-  return (string_view) {.str = str, .len = strlen(str)};
+string new_str(const char* owned, size_t len) {
+  return (string){.cstr = owned, .len = len};
 }
 
-void ds_reset(da_string* ds) {
-  memset(ds->str, 0, ds->len);
+da_string new_ds() {
+  da_string ds = {0};
+  return ds;
+}
+
+string_view sv_from_cstr(const char* cstr) {
+  return (string_view) {.cstr = cstr, .len = strlen(cstr)};
+}
+
+void free_ds(da_string* ds) {
+  free(ds->cstr);
+  *ds = (da_string){0};
+}
+
+void free_str(string* str) {
+  free((void*)str->cstr);
+  *str = (string){0};
+}
+
+
+void reset_ds(da_string* ds) {
+  memset(ds->cstr, 0, ds->len);
   ds->len = 0;
 }
 
 string_view sv_slice_till_delim(string_view sv, char delim) {
   for (size_t i=0; i<sv.len; i++) {
-    if (sv.str[i] == delim) {
+    if (sv.cstr[i] == delim) {
       return sv_slice(sv, 0, i);
     }
   }
@@ -27,61 +47,74 @@ string_view sv_slice_till_delim(string_view sv, char delim) {
 
 string_view sv_slice(string_view sv, size_t start, size_t len) {
   assert(sv.len >= start + len);
-  return new_sv(sv.str + start, len);
+  return new_sv(sv.cstr + start, len);
 }
 
-void ds_grow(da_string* ds, size_t cap) {
+void grow_ds(da_string* ds, size_t cap) {
   assert(cap!=0 && cap != ds->cap);
-  char* new_str = realloc(ds->str, cap);
+  char* new_str = realloc(ds->cstr, cap);
   assert(new_str != NULL);
   ds->cap = cap;
-  ds->str = new_str;
+  ds->cstr = new_str;
 }
 
-da_string new_ds() {
-  da_string ds = {0};
-  return ds;
-}
-
-void ds_push(da_string* ds, string_view* sv) {
+void push_ds(da_string* ds, string_view sv) {
   size_t cap = (ds->cap == 0) ? DS_DEFAULT_CAPACITY : ds->cap;
-  while (cap <= ds->len + sv->len + 1) cap *= 2;
-  if (cap != ds->cap) ds_grow(ds, cap);
+  while (cap <= ds->len + sv.len + 1) cap *= 2;
+  if (cap != ds->cap) grow_ds(ds, cap);
 
-  memcpy(ds->str + ds->len, sv->str, sv->len);
-  ds->len += sv->len;
+  memcpy(ds->cstr + ds->len, sv.cstr, sv.len);
+  ds->len += sv.len;
 }
 
-void ds_push_char(da_string* ds, char ch) {
+void push_char_ds(da_string* ds, char ch) {
   size_t cap = (ds->cap == 0) ? DS_DEFAULT_CAPACITY : ds->cap;
-  while (ds->cap <= ds->len + 1) ds_grow(ds, cap*2);
-  ds->str[ds->len] = ch;
+  while (ds->cap <= ds->len + 1) grow_ds(ds, cap*2);
+  ds->cstr[ds->len] = ch;
   ds->len++;
 }
 
-// doesnt alloc, borrowed string view
-string_view ds_to_sv(da_string* ds) {
-  return new_sv(ds->str, ds->len);
-}
-
 // allocates a new string
-string_view ds_build(da_string* ds) {
-  string_view sv;
-  char* str = malloc(ds->len+1);
-  assert(str != NULL);
-  memcpy(str, ds->str, ds->len);
-  sv.len = ds->len;
-  sv.str = str;
-  return sv;
+string build_ds(da_string* ds) {
+  string str;
+  char* cstr = malloc(ds->len+1);
+  assert(cstr != NULL);
+  memcpy(cstr, ds->cstr, ds->len);
+  str.len = ds->len;
+  str.cstr = cstr;
+  return str;
 }
 
-void free_ds(da_string* ds) {
-  free(ds->str);
-  *ds = (da_string){0};
-}
 
-void free_sv(string_view* sv) {
-  free((void*)sv->str);
-  *sv = (string_view){0};
+string_view ds_to_sv(da_string* ds) {
+  return new_sv(ds->cstr, ds->len);
+}
+string_view str_to_sv(string str) {
+  return new_sv(str.cstr, str.len);
+}
+//copies cstr because string type needs owned memory by design
+string ds_to_str_copy(da_string* ds) {
+  char* cstr = malloc(ds->len);
+  assert(cstr != NULL);
+  memcpy(cstr, ds->cstr, ds->len);
+  return new_str(cstr, ds->len);
+}
+string sv_to_str_copy(string_view sv) {
+  char* cstr = malloc(sv.len);
+  assert(cstr != NULL);
+  memcpy(cstr, sv.cstr, sv.len);
+  return new_str(cstr, sv.len);
+}
+da_string str_to_ds_copy(string str) {
+  char* cstr = malloc(str.len);
+  assert(cstr != NULL);
+  memcpy(cstr, str.cstr, str.len);
+  return (da_string){ .cstr=cstr, .cap=str.len, .len=str.len};
+}
+da_string sv_to_ds_copy(string_view sv) {
+  char* cstr = malloc(sv.len);
+  assert(cstr != NULL);
+  memcpy(cstr, sv.cstr, sv.len);
+  return (da_string){ .cstr=cstr, .cap=sv.len, .len=sv.len};
 }
 

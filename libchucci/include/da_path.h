@@ -5,7 +5,7 @@
 #include <da_string.h>
 
 typedef struct {
-  char* str;
+  char* cstr;
   size_t len;
 } Path;
 
@@ -17,7 +17,7 @@ typedef enum {
 
 Path new_path(string_view pathstr);
 Path new_path_from_cstr(char* pathstr);
-string_view get_absolute_path(Path* path);
+string get_absolute_path(Path* path);
 bool is_path_absolute(Path* path);
 bool is_path_relative(Path* path);
 bool path_exists(Path* path);
@@ -25,9 +25,9 @@ PathType get_path_type(Path* path);
 
 bool path_cmp(Path* path1, Path* path2);
 
-// these ALL malloc string_views
+string read_file(Path* path);
+string path_to_str(Path* path);
 string_view get_path_directory(Path* path);
-string_view read_file(Path* path);
 string_view path_to_sv(Path* path);
 
 void free_path(Path* path);

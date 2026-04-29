@@ -21,6 +21,6 @@ typedef struct {
 } Preprocessor1;
 
 Preprocessor1 new_pp1(string_view source, CompilerCtx* ctx);
-string_view resolve_pp1(Preprocessor1* pp1);
+string resolve_pp1(Preprocessor1* pp1);
 
 #endif

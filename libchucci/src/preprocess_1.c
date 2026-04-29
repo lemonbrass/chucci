@@ -23,25 +23,25 @@ void check_cyclic_includes(Preprocessor1* pp1, Path path) {
 void open_included_file(Preprocessor1* pp1, string_view file) {
   da_string builder = new_ds();
   for (size_t i=0; i<kv_size(pp1->ctx->include_dirs); i++) {
-    string_view dir = kv_A(pp1->ctx->include_dirs, i);
-    ds_push(&builder, &dir);
-    ds_push_char(&builder, '/');
-    ds_push(&builder, &file);
+    string dir = kv_A(pp1->ctx->include_dirs, i);
+    push_ds(&builder, str_to_sv(dir));
+    push_char_ds(&builder, '/');
+    push_ds(&builder, file);
     Path path = new_path(ds_to_sv(&builder));
     
     if (path_exists(&path)) {
-      string_view contents = read_file(&path);
-      Preprocessor1 child = new_pp1(contents, pp1->ctx);
-      string_view processed = resolve_pp1(&child);
-      ds_push(&pp1->ctx->buf, &processed);
-      free_sv(&contents);
-      free_sv(&processed);
+      string contents = read_file(&path);
+      Preprocessor1 child = new_pp1(str_to_sv(contents), pp1->ctx);
+      string processed = resolve_pp1(&child);
+      push_ds(&pp1->ctx->buf, str_to_sv(processed));
+      free_str(&contents);
+      free_str(&processed);
       free_ds(&builder);
 
       kv_push(Path, pp1->ctx->included_files, path);
       return;
     }
-    ds_reset(&builder);
+    reset_ds(&builder);
     free_path(&path);
   }
   free_ds(&builder);
@@ -73,7 +73,7 @@ void resolve_include(Preprocessor1* pp1) {
   if (!ch_match_cursor(&pp1->cursor, '\n') && !ch_match_cursor(&pp1->cursor, '\0')) assert(false && "expected newline or eof after #include");
 }
 
-string_view resolve_pp1(Preprocessor1* pp1) {
+string resolve_pp1(Preprocessor1* pp1) {
   while (is_cursor_valid(&pp1->cursor)) {
     char current = peek(&pp1->cursor);
     switch (current) {
@@ -128,12 +128,12 @@ string_view resolve_pp1(Preprocessor1* pp1) {
       }
       default: {
         default_body:
-          ds_push_char(&pp1->ctx->buf, current);
+          push_char_ds(&pp1->ctx->buf, current);
           advance_cursor(&pp1->cursor);
       }
     }
   }
-  string_view str = ds_build(&pp1->ctx->buf);
-  ds_reset(&pp1->ctx->buf);
+  string str = build_ds(&pp1->ctx->buf);
+  reset_ds(&pp1->ctx->buf);
   return str;
 }

@@ -8,27 +8,31 @@
 
 Path new_path(string_view pathstr) {
   Path p = {0};
-  p.str = malloc(pathstr.len + 1);
+  p.cstr = malloc(pathstr.len + 1);
   p.len = pathstr.len;
-  assert(p.str != NULL);
-  strncpy(p.str, pathstr.str, pathstr.len);
-  p.str[pathstr.len] = '\0';
+  assert(p.cstr != NULL);
+  strncpy(p.cstr, pathstr.cstr, pathstr.len);
+  p.cstr[pathstr.len] = '\0';
   return p;
 }
 
 Path new_path_from_cstr(char* pathstr) {
   Path p = {0};
   p.len = strlen(pathstr);
-  p.str = strdup(pathstr);
+  p.cstr = strdup(pathstr);
   return p;
 }
 
 bool path_cmp(Path* path1, Path* path2) {
-  return path1->len == path2->len && strcmp(path1->str, path2->str);
+  return path1->len == path2->len && strcmp(path1->cstr, path2->cstr);
 }
 
-string_view path_to_sv(Path* path) {
-  return new_sv(path->str, path->len);
+string_view path_to_sv(Path *path) {
+  return new_sv(path->cstr, path->len);
+}
+
+string path_to_str(Path* path) {
+  return new_str(path->cstr, path->len);
 }
 
 bool is_path_absolute(Path* path) {
@@ -52,7 +56,7 @@ bool is_path_relative(Path* path) {
 }
 
 bool path_exists(Path* path) {
-  FILE* f = fopen(path->str, "rb");
+  FILE* f = fopen(path->cstr, "rb");
   if (f) {
     fclose(f);
     return true;
@@ -66,7 +70,7 @@ bool path_exists(Path* path) {
 PathType get_path_type(Path *path) {
   struct stat st;
 
-  if (stat(path->str, &st) != 0)
+  if (stat(path->cstr, &st) != 0)
     return PATH_INVALID;
 
   if (S_ISREG(st.st_mode))
@@ -78,8 +82,9 @@ PathType get_path_type(Path *path) {
   return PATH_INVALID; // symlink, device, etc. (you can expand if needed)
 }
 
-string_view get_absolute_path(Path* path) {
-  return sv_from_cstr(realpath(path->str, NULL));
+string get_absolute_path(Path* path) {
+  char* cstr = realpath(path->cstr, NULL);
+  return new_str(cstr, strlen(cstr));
 }
 
 #else
@@ -87,7 +92,7 @@ string_view get_absolute_path(Path* path) {
 #include <windows.h>
 
 PathType get_path_type(Path *path) {
-  DWORD attr = GetFileAttributesA(path->str);
+  DWORD attr = GetFileAttributesA(path->cstr);
 
   if (attr == INVALID_FILE_ATTRIBUTES)
     return PATH_INVALID;
@@ -100,7 +105,7 @@ PathType get_path_type(Path *path) {
 
 string_view get_absolute_path(Path* path) {
   char buffer[MAX_PATH];
-  DWORD len = GetFullPathNameA(path->str, MAX_PATH, buffer, NULL);
+  DWORD len = GetFullPathNameA(path->cstr, MAX_PATH, buffer, NULL);
   if (len == 0) return NULL;
   return new_sv(_strdup(buffer), len);
 }
@@ -111,17 +116,17 @@ string_view get_path_directory(Path* path) {
   assert(path->len != 0);
   size_t i = path->len-1;
   // if path has a traling '/' or '\' 
-  if (path->str[i] == '/' || path->str[i] == '\\') {
+  if (path->cstr[i] == '/' || path->cstr[i] == '\\') {
     i--;
     assert(i>0);
   }
-  while (i > 0 && path->str[i] != '/' && path->str[i] != '\\') i--;
-  assert(i > 0 && (path->str[i] == '/' || path->str[i] == '\\'));
+  while (i > 0 && path->cstr[i] != '/' && path->cstr[i] != '\\') i--;
+  assert(i > 0 && (path->cstr[i] == '/' || path->cstr[i] == '\\'));
   return sv_slice(path_to_sv(path), 0, i+1);
 }
 
-string_view read_file(Path* path) {
-  FILE* f = fopen(path->str, "rb");
+string read_file(Path* path) {
+  FILE* f = fopen(path->cstr, "rb");
   assert(f != NULL);
 
   assert(fseek(f, 0, SEEK_END) == 0);
@@ -142,11 +147,11 @@ string_view read_file(Path* path) {
   }
 
   buf[size] = '\0';
-  return new_sv(buf, size);
+  return new_str(buf, size);
 }
 
 
 void free_path(Path *path) {
-  free(path->str);
+  free(path->cstr);
   *path = (Path){0};
 }
