@@ -37,6 +37,7 @@ string_view sv_slice_till_delim(string_view sv, char delim);
 
 da_string new_ds();
 
+void ds_reset(da_string* ds);
 void ds_push(da_string* ds, string_view* sv);
 void ds_push_char(da_string* ds, char ch);
 void ds_grow(da_string* ds, size_t cap);

@@ -11,6 +11,11 @@ string_view sv_from_cstr(const char* str) {
   return (string_view) {.str = str, .len = strlen(str)};
 }
 
+void ds_reset(da_string* ds) {
+  memset(ds->str, 0, ds->len);
+  ds->len = 0;
+}
+
 string_view sv_slice_till_delim(string_view sv, char delim) {
   for (size_t i=0; i<sv.len; i++) {
     if (sv.str[i] == delim) {

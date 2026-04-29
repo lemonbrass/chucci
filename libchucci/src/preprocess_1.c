@@ -14,9 +14,9 @@ Preprocessor1 new_pp1(string_view source) {
 }
 
 void open_included_file(Preprocessor1* pp1, string_view file) {
+  da_string builder = new_ds();
   for (size_t i=0; i<kv_size(pp1->include_dirs); i++) {
     string_view dir = kv_A(pp1->include_dirs, i);
-    da_string builder = new_ds();
     ds_push(&builder, &dir);
     ds_push_char(&builder, '/');
     ds_push(&builder, &file);
@@ -30,10 +30,10 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
       free_path(&path);
       return;
     }
-    
-    free_ds(&builder);
+    ds_reset(&builder);
     free_path(&path);
   }
+  free_ds(&builder);
 
   assert(false && "Included file not found");
 }
@@ -63,21 +63,24 @@ void resolve_include(Preprocessor1* pp1) {
 
 string_view resolve_pp1(Preprocessor1* pp1) {
   while (is_cursor_valid(&pp1->cursor)) {
-    char current = peek(&pp1->cursor);
     dump_cursor(&pp1->cursor);
+    char current = peek(&pp1->cursor);
     switch (current) {
       case '#': {
+        Cursor mark = mark_cursor(&pp1->cursor);
         ch_match_cursor(&pp1->cursor, '#');
         skip_whitespace(&pp1->cursor);
         if (str_match_cursor(&pp1->cursor, sv_from_cstr("include"))) {
           resolve_include(pp1);
           break;
         }
+        rewind_cursor(&pp1->cursor, &mark);
+        // fallthrough default: for #define etc....
       }
       default:
         ds_push_char(&pp1->builder, current);
+        advance_cursor(&pp1->cursor);
     }
-    advance_cursor(&pp1->cursor);
   }
   string_view str = ds_build(&pp1->builder);
   free_ds(&pp1->builder);

@@ -82,6 +82,14 @@ char peek_next(Cursor *cursor) {
   return cursor->source.str[cursor->id+1];
 }
 
+Cursor mark_cursor(Cursor* cursor) {
+  return *cursor;
+}
+
+void rewind_cursor(Cursor* cursor, Cursor* mark) {
+  *cursor = *mark;
+}
+
 bool str_match_cursor(Cursor *cursor, string_view expected) {
   assert(expected.len < cursor->source.len - cursor->id);
   Cursor mark = *cursor;

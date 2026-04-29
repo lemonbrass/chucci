@@ -25,6 +25,8 @@ bool str_match_cursor(Cursor *c, string_view expected);
 
 string_view get_current_line(Cursor* cursor);
 
+Cursor mark_cursor(Cursor* cursor);
+void rewind_cursor(Cursor* cursor, Cursor* mark);
 /*
 * Get the full line from the current cursor position till the newline
 * Will return till EOF if \n isnt found.
