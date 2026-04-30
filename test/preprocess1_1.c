@@ -1,3 +1,4 @@
+#include "compiler.h"
 #include <ctx.h>
 #include <thirdparty/kvec.h>
 #include <da_string.h>
@@ -24,18 +25,20 @@ void preprocess1_1(jmp_buf errbuf) {
       "   return yoyo_ret();\n"
       "}\n"
   );
-  CompilerCtx ctx = new_ctx();
-  kv_push(string, ctx.include_dirs, new_str(strdup("."), 1)); // CTX FREES string_view LATER, SO WE NEED MALLOCED MEMORY
+
+  CompilerOpt* opt = new_opt();
+  opt_include_dir(opt, str_from_cstr_copy("."));
+  CompilerCtx ctx = new_ctx(opt);
   
   Preprocessor1 pp1 = new_pp1(source, &ctx);
-  
   string result = resolve_pp1(&pp1);
   
-  printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
+  //printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
 
   if (s_cmp(expected, result)) longjmp(errbuf, 1);
   
   free_ctx(&ctx);
   free_str(&result);
+  free_opt(&opt);
 }
 

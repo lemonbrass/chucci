@@ -13,7 +13,7 @@ void cursor1(jmp_buf buf) {
   Cursor c = new_cursor(sv);
   while (advance_cursor(&c) != '\n');
 
-  dump_cursor(&c);
+  //dump_cursor(&c);
 
   string_view result = get_till_newline_or_eof(&c);
   if (!s_cmp(result, sv_from_cstr("bonjour, \n"))) {

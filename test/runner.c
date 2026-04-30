@@ -12,11 +12,15 @@
 
 void cursor1(jmp_buf buf);
 void preprocess1_1(jmp_buf buf);
+void preprocess1_2(jmp_buf buf);
 
 jmp_buf errbuf;
+
+jmp_buf assert_env;
 
 int main() {
   RUN_TEST(cursor1);
   RUN_TEST(preprocess1_1);
+  RUN_TEST(preprocess1_2);
   return 0;
 }

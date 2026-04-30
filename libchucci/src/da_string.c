@@ -26,6 +26,10 @@ char* get_cstr_from_ds(da_string* ds) {
   else return ds->_cstr;
 }
 
+string str_from_cstr_copy(const char* cstr) {
+  return new_str(strdup(cstr), strlen(cstr));
+}
+
 string_view sv_from_cstr(const char* cstr) {
   return (string_view) {.cstr = cstr, .len = strlen(cstr)};
 }

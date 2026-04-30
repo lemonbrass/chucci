@@ -24,7 +24,7 @@ Path new_path_from_cstr(char* pathstr) {
 }
 
 bool path_cmp(Path* path1, Path* path2) {
-  return path1->len == path2->len && strcmp(path1->cstr, path2->cstr);
+  return path1->len == path2->len && strcmp(path1->cstr, path2->cstr) == 0;
 }
 
 string_view path_to_sv(Path *path) {

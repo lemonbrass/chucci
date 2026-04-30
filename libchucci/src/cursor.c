@@ -88,12 +88,14 @@ char peek_next(Cursor *cursor) {
   return cursor->source.cstr[cursor->id+1];
 }
 
-Cursor mark_cursor(Cursor* cursor) {
-  return *cursor;
+CursorMark mark_cursor(Cursor* cursor) {
+  return (CursorMark){ .col=cursor->col, .id=cursor->id, .line=cursor->line };
 }
 
-void rewind_cursor(Cursor* cursor, Cursor* mark) {
-  *cursor = *mark;
+void rewind_cursor(Cursor* cursor, CursorMark* mark) {
+  cursor->col = mark->col;
+  cursor->line = mark->line;
+  cursor->id = mark->id;
 }
 
 bool str_match_cursor(Cursor *cursor, string_view expected) {

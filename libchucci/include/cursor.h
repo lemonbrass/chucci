@@ -12,6 +12,12 @@ typedef struct {
   string_view source;
 } Cursor;
 
+typedef struct {
+  size_t line;
+  size_t col;
+  size_t id; // index in the raw source file string
+} CursorMark;
+
 
 void dump_cursor(Cursor* c);
 // get next character
@@ -29,8 +35,8 @@ bool str_match_cursor(Cursor *cursor, string_view expected);
 
 string_view get_current_line(Cursor* cursor);
 
-Cursor mark_cursor(Cursor* cursor);
-void rewind_cursor(Cursor* cursor, Cursor* mark);
+CursorMark mark_cursor(Cursor* cursor);
+void rewind_cursor(Cursor* cursor, CursorMark* mark);
 /*
 * Get the full line from the current cursor position till the newline
 * Will return till EOF if \n isnt found.

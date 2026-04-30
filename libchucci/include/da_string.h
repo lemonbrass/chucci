@@ -46,7 +46,7 @@ typedef struct {
 *   string_view and string are only different in design philosophies (owned vs borrowed)
 */
 
-string_view sv_from_cstr(const char* str);
+string_view sv_from_cstr(const char* cstr);
 string_view sv_slice(string_view sv, size_t pos, size_t len);
 string_view sv_slice_till_delim(string_view sv, char delim);
 
@@ -62,6 +62,7 @@ void push_char_ds(da_string* ds, char ch);
 void grow_ds(da_string* ds, size_t cap);
 
 string build_ds(da_string* ds);
+string str_from_cstr_copy(const char* cstr);
 
 void free_ds(da_string* ds);
 // This is an exception to that recommendation because this function sets str to null after freeing
