@@ -35,7 +35,7 @@ void preprocess1_1(jmp_buf errbuf) {
   
   //printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
 
-  if (s_cmp(expected, result)) longjmp(errbuf, 1);
+  if (!s_eq(expected, result)) longjmp(errbuf, 1);
   
   free_ctx(&ctx);
   free_str(&result);
