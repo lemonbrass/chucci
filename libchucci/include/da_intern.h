@@ -2,14 +2,28 @@
 #define DA_INTERN_H
 
 #include <da_arena.h>
+#include <stdbool.h>
 #include <thirdparty/kvec.h>
 #include <da_string.h>
 #include <stdint.h>
 
-typedef string* interned_str;
+#ifndef INTERN_LOAD_FACTOR
+#define INTERN_LOAD_FACTOR 0.8
+#endif
+
+typedef uint32_t hash_t;
+typedef struct {
+  char* cstr;
+  uint32_t len;
+} interned_str;
 
 typedef struct {
- kvec_t(string) entries;
+ string str;
+ hash_t h;
+} InternEntry;
+
+typedef struct {
+ kvec_t(InternEntry) entries;
  arena_t* arena;
  uint32_t seed;
  uint32_t cap;
@@ -17,6 +31,10 @@ typedef struct {
 } InternTable;
 
 InternTable* new_interntable();
-interned_str intern(InternTable* it, string_view str);
+interned_str intern(InternTable* table, string_view str);
+
+bool interned_eq(interned_str str1, interned_str str2);
+string_view interned_to_sv(interned_str str);
+void free_interntable(InternTable** table);
 
 #endif

@@ -5,7 +5,7 @@ make -j$(nproc)
 
 for arg in "$@"; do
     if [ $arg == "test" ]; then
-      ./test/all_tests
+      valgrind --leak-check=full ./test/all_tests
     fi
 done
 

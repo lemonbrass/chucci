@@ -6,6 +6,9 @@
 
 extern jmp_buf assert_env;
 
+/*
+ NOTE: THIS CODE CURRENTLY LEAKS MEMORY BECAUSE OF assert() INSTEAD OF PROPER ERROR HANDLING
+*/
 
 void preprocess1_2(jmp_buf errbuf) {
   const char* source = "#include <../test/inputs/recursiveinclude.h>";
@@ -15,7 +18,10 @@ void preprocess1_2(jmp_buf errbuf) {
   Preprocessor1 pp1 = new_pp1(sv_from_cstr(source), &ctx);
   
   if (setjmp(assert_env) == 0) {
-    resolve_pp1(&pp1);
+    string result = resolve_pp1(&pp1);
+    free_ctx(&ctx);
+    free_opt(&opt);
+    free_str(&result);
     // We expect the code to throw an error
     // If it doesnt, its a failure
     longjmp(errbuf, 1);
@@ -23,5 +29,6 @@ void preprocess1_2(jmp_buf errbuf) {
   else {
     // test passed
     free_ctx(&ctx);
+    free_opt(&opt);
   }
 }

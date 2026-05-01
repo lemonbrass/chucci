@@ -1,5 +1,3 @@
-#define CV_ALLOC(size) calloc(size)
-
 #include <da_string.h>
 #include <thirdparty/kvec.h>
 #include <da_arena.h>
@@ -8,9 +6,6 @@
 #include <string.h>
 #include <time.h>
 
-#define INTERN_LOAD_FACTOR 0.8
-
-typedef uint32_t hash_t;
 
 hash_t hash_str(const char *data, size_t len, uint32_t seed) {
   uint32_t h = seed ^ (uint32_t)len;
@@ -54,33 +49,74 @@ hash_t hash_str(const char *data, size_t len, uint32_t seed) {
 
 InternTable* new_interntable() {
   InternTable* table = malloc(sizeof(InternTable));
+  table->len = 0;
   table->cap = 1024;
-  table->arena = new_arena(1024, ARENA_RELIABLE_MARK & ARENA_ZERO_OUT);
+  table->arena = new_arena(1024, ARENA_RELIABLE_MARK | ARENA_ZERO_OUT);
   kv_init(table->entries);
-  kv_resize(string, table->entries, 1024);
-  memset(table->entries.a, 0, sizeof(string)*table->entries.m);
+  kv_resize(InternEntry, table->entries, 1024);
+  memset(table->entries.a, 0, sizeof(InternEntry)*table->entries.m);
   table->seed = time(NULL);
   return table;
 }
 
-interned_str intern(InternTable* table, string_view str) {
-  assert((float)table->len/(float)table->cap < INTERN_LOAD_FACTOR);
-  hash_t h = hash_str(str.cstr, str.len, table->seed);
+string_view interned_to_sv(interned_str str) {
+  return (string_view){ .cstr=str.cstr, .len=str.len };
+}
+
+interned_str str_to_interned(string str) {
+  return (interned_str) { .len=str.len, .cstr=(char*)str.cstr };
+}
+
+bool interned_eq(interned_str str1, interned_str str2) {
+  return str1.cstr == str2.cstr;
+}
+
+static InternEntry* intern_find_slot(InternTable* table, hash_t h, string_view str) {
   for (size_t idx = h % table->cap; ; idx = (idx + 1) % table->cap) {
-    string* entry = &kv_A(table->entries, idx);
-    if (entry->cstr == NULL) {
-      entry->cstr = arena_alloc(table->arena, str.len);
-      entry->len = str.len;
-      memcpy((void*)entry->cstr, str.cstr, str.len);
-      table->len++;
-      // printf("New entry: %.*s\n", (int)entry->len, entry->cstr);
-      return entry;
-    }
-    else if (s_eq(str, *entry)) {
-      // printf("Old entry: %.*s\n", (int)entry->len, entry->cstr);
-      return entry;
-    }
+    InternEntry* entry = &kv_A(table->entries, idx);
+
+    if (entry->str.cstr == NULL) return entry;
+    if (entry->h == h && s_eq(str, entry->str)) return entry;
   }
 }
 
+static void resize_interntable(InternTable* table) {
+  InternTable new_table = {0};
+  new_table.arena = table->arena;
+  new_table.cap = table->cap * 2;
+  new_table.seed = table->seed;
+  new_table.len = table->len;
+  kv_init(new_table.entries);
+  kv_resize(InternEntry, new_table.entries, new_table.cap);
+  memset(new_table.entries.a, 0, sizeof(InternEntry)*new_table.entries.m);
+  for (size_t i=0; i<table->cap; i++) {
+    InternEntry entry = kv_A(table->entries, i);
+    InternEntry* new_entry = intern_find_slot(&new_table, entry.h, str_to_sv(entry.str));
+    *new_entry = entry;
+  }
+  kv_destroy(table->entries);
+  *table = new_table;
+}
 
+interned_str intern(InternTable* table, string_view str) {
+  if((float)table->len/(float)table->cap > INTERN_LOAD_FACTOR) resize_interntable(table);
+  hash_t h = hash_str(str.cstr, str.len, table->seed);
+  InternEntry* entry = intern_find_slot(table, h, str);
+
+  if (entry->str.cstr == NULL) {
+    entry->str.cstr = arena_alloc(table->arena, str.len);
+    entry->str.len = str.len;
+    entry->h = h;
+    table->len++;
+    memcpy((char*)entry->str.cstr, str.cstr, str.len);
+  }
+  return str_to_interned(entry->str);
+}
+
+
+void free_interntable(InternTable** table) {
+  kv_destroy((*table)->entries);
+  arena_free((*table)->arena);
+  free(*table);
+  *table = NULL;
+}

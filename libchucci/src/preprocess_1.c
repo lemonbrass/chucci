@@ -27,6 +27,7 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
     push_ds(&builder, str_to_sv(dir));
     push_char_ds(&builder, '/');
     push_ds(&builder, file);
+
     Path path = new_path(ds_to_sv(&builder));
     
     if (path_exists(&path)) {
@@ -39,7 +40,6 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
       free_str(&contents);
       free_str(&processed);
       free_ds(&builder);
-
       return;
     }
     reset_ds(&builder);
