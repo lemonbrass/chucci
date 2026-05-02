@@ -1,6 +1,8 @@
 #ifndef CTX_H
 #define CTX_H
 
+#include "token.h"
+#include <da_intern.h>
 #include <da_path.h>
 #include <da_string.h>
 #include <stddef.h>
@@ -10,6 +12,8 @@
 typedef struct {
   CompilerOpt* options;
   kvec_t(Path) included_files;
+  InternTable* table;
+  interned_str keywords[__token_kind_count];
   da_string buf; // for internal memory reuse
 } CompilerCtx;
 

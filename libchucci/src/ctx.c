@@ -1,3 +1,5 @@
+#include "token.h"
+#include <da_intern.h>
 #include <compiler.h>
 #include <da_path.h>
 #include <da_string.h>
@@ -9,7 +11,11 @@ CompilerCtx new_ctx(CompilerOpt* options) {
   CompilerCtx ctx = {0};
   ctx.options = options;
   ctx.buf = new_ds();
+  ctx.table = new_interntable();
   kv_init(ctx.included_files);
+  #define X(a, b) ctx.keywords[a] = intern(ctx.table, sv_from_cstr(b));
+  KEYWORDS(X)
+  #undef X
   return ctx;
 }
 
@@ -19,4 +25,5 @@ void free_ctx(CompilerCtx* ctx) {
   }
   kv_destroy(ctx->included_files);
   free_ds(&ctx->buf);
+  free_interntable(&ctx->table);
 }

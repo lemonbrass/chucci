@@ -67,10 +67,6 @@ interned_str str_to_interned(string str) {
   return (interned_str) { .len=str.len, .cstr=(char*)str.cstr };
 }
 
-bool interned_eq(interned_str str1, interned_str str2) {
-  return str1.cstr == str2.cstr;
-}
-
 static InternEntry* intern_find_slot(InternTable* table, hash_t h, string_view str) {
   for (size_t idx = h % table->cap; ; idx = (idx + 1) % table->cap) {
     InternEntry* entry = &kv_A(table->entries, idx);

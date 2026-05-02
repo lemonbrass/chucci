@@ -99,7 +99,8 @@ void rewind_cursor(Cursor* cursor, CursorMark* mark) {
 }
 
 bool str_match_cursor(Cursor *cursor, string_view expected) {
-  assert(expected.len < cursor->source.len - cursor->id);
+  if (expected.len > cursor->source.len - cursor->id)
+    return false;
   Cursor mark = *cursor;
   for (size_t i=0; i<expected.len; i++) {
     char ch = advance_cursor(&mark);
@@ -115,7 +116,7 @@ bool ch_match_cursor(Cursor *cursor, char expected) {
 }
 
 bool is_cursor_valid(Cursor* cursor) {
-  return cursor->source.len > cursor->id;
+  return cursor->source.len >= cursor->id;
 }
 
 void dump_cursor(Cursor* c) {
@@ -124,4 +125,8 @@ void dump_cursor(Cursor* c) {
   printf("%.*s\n", (int)currline.len, currline.cstr);
   for (size_t i=0; i < (c->col-1+prefix); i++) printf(" ");
   printf("^\n");
+}
+
+string_view slice_cursor(Cursor* cursor, size_t n) {
+  return sv_slice(cursor->source, cursor->id, n);
 }

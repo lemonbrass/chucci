@@ -18,6 +18,8 @@ typedef struct {
   size_t id; // index in the raw source file string
 } CursorMark;
 
+#define is_alpha(ch) ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
+#define is_num(ch) (ch >= '0' && ch <= '9')
 
 void dump_cursor(Cursor* c);
 // get next character
@@ -50,6 +52,8 @@ Cursor new_cursor(string_view source);
 // returns current character and advances
 char advance_cursor(Cursor* cursor);
 void advance_cursor_by(Cursor* cursor, size_t n);
+
+string_view slice_cursor(Cursor* cursor, size_t n);
 
 bool is_cursor_valid(Cursor* cursor);
 void skip_whitespace(Cursor* cursor);

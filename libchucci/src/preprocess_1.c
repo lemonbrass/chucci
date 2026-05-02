@@ -75,7 +75,8 @@ void resolve_include(Preprocessor1* pp1) {
 }
 
 string resolve_pp1(Preprocessor1* pp1) {
-  while (is_cursor_valid(&pp1->cursor)) {
+  while (peek(&pp1->cursor) != '\0') {
+    // dump_cursor(&pp1->cursor);
     char current = peek(&pp1->cursor);
     switch (current) {
       case '#': {

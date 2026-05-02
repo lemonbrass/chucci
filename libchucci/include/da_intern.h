@@ -11,6 +11,8 @@
 #define INTERN_LOAD_FACTOR 0.8
 #endif
 
+#define interned_eq(str1, str2) ((str1).cstr == (str2).cstr)
+
 typedef uint32_t hash_t;
 typedef struct {
   char* cstr;
@@ -33,7 +35,6 @@ typedef struct {
 InternTable* new_interntable();
 interned_str intern(InternTable* table, string_view str);
 
-bool interned_eq(interned_str str1, interned_str str2);
 string_view interned_to_sv(interned_str str);
 void free_interntable(InternTable** table);
 
