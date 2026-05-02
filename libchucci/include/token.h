@@ -53,7 +53,7 @@ extern bool is_op_table[256];
     X(OP_DOT, ".", '.') \
     X(OP_PREPROCESS, "#", '#')
 
-#define SEPERATORS(X) \
+#define SEPARATORS(X) \
   X(SEP_LPAREN, "(", '(') \
   X(SEP_RPAREN, ")", ')') \
   X(SEP_LCURLY, "{", '{') \
@@ -91,7 +91,7 @@ typedef enum TokenKind {
   KEYWORDS(X)
   #undef X
   #define X(a, b, c) a,
-  SEPERATORS(X)
+  SEPARATORS(X)
   #undef X
   TOK_EOF,
   TOK_ERROR,

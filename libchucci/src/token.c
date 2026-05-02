@@ -10,7 +10,7 @@ const char* tok_to_str[__token_kind_count] = {
   KEYWORDS(X)
   #undef X
   #define X(a, b, c) b,
-  SEPERATORS(X)
+  SEPARATORS(X)
   #undef X
   "eof", "error", "ident", "num"
 };
@@ -57,7 +57,7 @@ void print_token(Token* token) {
      OPERATORS(X)
     #undef X
     #define X(a, b, c) case a: printf("sep(%s)", b); break;
-     SEPERATORS(X)
+     SEPARATORS(X)
     #undef X
     #define X(a, b) case a: printf("keyword(%s)", b); break;
      KEYWORDS(X)
