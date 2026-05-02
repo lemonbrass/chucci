@@ -61,6 +61,19 @@ Token lex_op(Lexer* lexer) {
   assert(false && "UNREACHABLE");
 }
 
+Token lex_str(Lexer* lexer) {
+  CursorMark pos = mark_cursor(&lexer->cursor);
+  advance_cursor(&lexer->cursor);
+  char ch;
+  while ((ch = peek(&lexer->cursor), ch != '\"')) {
+    if (ch == '\\') advance_cursor(&lexer->cursor);
+    advance_cursor(&lexer->cursor);
+  }
+  advance_cursor(&lexer->cursor); // skip final "
+  string_view str = sv_slice(lexer->cursor.source, pos.id, lexer->cursor.id-pos.id);
+  return new_token(pos, str);
+}
+
 Token lex_next_token(Lexer* lexer) {
   skip_whitespace(&lexer->cursor);
   char current = peek(&lexer->cursor);
@@ -79,6 +92,11 @@ Token lex_next_token(Lexer* lexer) {
 
   if (is_op(current)) {
     token = lex_op(lexer);
+    goto end;
+  }
+
+  if (current == '\"') {
+    token = lex_str(lexer);
     goto end;
   }
 

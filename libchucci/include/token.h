@@ -1,6 +1,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include <assert.h>
 #include <da_string.h>
 #include <cursor.h>
 #include <da_intern.h>
@@ -96,7 +97,7 @@ typedef enum TokenKind {
   TOK_EOF,
   TOK_ERROR,
   TOK_IDENT,
-  TOK_NUM,
+  TOK_VAL,
   __token_kind_count,
 } TokenKind;
 
@@ -111,7 +112,7 @@ typedef struct {
   TokenKind kind;
   union {
     interned_str ident;
-    string_view num;
+    string_view val;
     TokenError error;
   };
 } Token;
@@ -119,7 +120,7 @@ typedef struct {
 #define new_token(pos, data) \
    _Generic(data,\
    interned_str: new_tok_ident, \
-   string_view: new_tok_num, \
+   string_view: new_tok_val, \
    int: new_tok_simple)(pos, data)
 
 
@@ -131,9 +132,10 @@ typedef struct {
 Token new_tok_error(CursorMark pos, int c_line, const char* c_file, const char* error);
 Token new_tok_ident(CursorMark pos, interned_str name);
 Token new_tok_ident(CursorMark pos, interned_str name);
-Token new_tok_num(CursorMark pos, string_view num);
+Token new_tok_val(CursorMark pos, string_view val);
 Token new_tok_simple(CursorMark pos, TokenKind keyword);
 
 void print_token(Token* token);
+void print_token_pretty(Token* token);
 
 #endif

@@ -8,18 +8,20 @@
 
 void lexer1(jmp_buf errbuf) {
   string_view source = sv_from_cstr(
-    "int x = 0.6.9 + 42.0;"
+    "int x = 0.6.9 + 42.0;\n"
+    "string y = \"Hello, World\";\n"
   );
   CompilerOpt* opt = new_opt();
   CompilerCtx ctx = new_ctx(opt);
 
-  TokenKind expected[] = { KW_INT, TOK_IDENT, OP_ASSIGN, TOK_NUM, OP_DOT, TOK_NUM, OP_ADD, TOK_NUM, SEP_SEMI, TOK_EOF };
+  TokenKind expected[] = { KW_INT, TOK_IDENT, OP_ASSIGN, TOK_VAL, OP_DOT, TOK_VAL, OP_ADD, TOK_VAL, SEP_SEMI,
+                           TOK_IDENT, TOK_IDENT, OP_ASSIGN, TOK_VAL, SEP_SEMI, TOK_EOF };
   Lexer lexer = new_lexer(source, &ctx);
 
   size_t i = 0;
   for (Token token = lex_next_token(&lexer); ; token = lex_next_token(&lexer)) {
-    // print_token(&token);
-    // printf("\n");
+    print_token_pretty(&token);
+    printf("\n");
     if (token.kind != expected[i]) {
       free_ctx(&ctx);
       free_opt(&opt);

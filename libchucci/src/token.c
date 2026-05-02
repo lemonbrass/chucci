@@ -12,7 +12,7 @@ const char* tok_to_str[__token_kind_count] = {
   #define X(a, b, c) b,
   SEPARATORS(X)
   #undef X
-  "eof", "error", "ident", "num"
+  "eof", "error", "ident", "value"
 };
 #define X(a, b, c) [(unsigned char)c] = true,
 bool is_op_table[256] = {
@@ -36,11 +36,11 @@ Token new_tok_error(CursorMark pos, int c_line, const char* c_file, const char* 
   return token;
 }
 
-Token new_tok_num(CursorMark pos, string_view num) {
+Token new_tok_val(CursorMark pos, string_view val) {
   Token token;
-  token.kind = TOK_NUM;
+  token.kind = TOK_VAL;
   token.pos = pos;
-  token.num = num;
+  token.val = val;
   return token;
 }
 
@@ -53,6 +53,24 @@ Token new_tok_simple(CursorMark pos, TokenKind kind) {
 
 void print_token(Token* token) {
   switch (token->kind) {
+    #define X(a, b, c) case a: printf("op(%s) at (%zu, %zu)", b, token->pos.line, token->pos.col); break;
+     OPERATORS(X)
+    #undef X
+    #define X(a, b, c) case a: printf("sep(%s) at (%zu, %zu)", b, token->pos.line, token->pos.col); break;
+     SEPARATORS(X)
+    #undef X
+    #define X(a, b) case a: printf("keyword(%s) at (%zu, %zu)", b, token->pos.line, token->pos.col); break;
+     KEYWORDS(X)
+    #undef X
+    case TOK_EOF:   printf("eof at (%zu, %zu)", token->pos.line, token->pos.col); break;
+    case TOK_ERROR: printf("error(%s: %s at %d) at (%zu, %zu)", token->error.str, token->error.c_file, token->error.c_line, token->pos.line, token->pos.col); break;
+    case TOK_VAL:   printf("val(%.*s) at (%zu, %zu)", (int)token->val.len, token->val.cstr, token->pos.line, token->pos.col); break;
+    case TOK_IDENT: printf("ident(%.*s) at (%zu, %zu)", (int)token->ident.len, token->ident.cstr, token->pos.line, token->pos.col); break;
+    default: assert(false && "UNREACHABLE");
+  }
+}
+void print_token_pretty(Token* token) {
+  switch (token->kind) {
     #define X(a, b, c) case a: printf("op(%s)", b); break;
      OPERATORS(X)
     #undef X
@@ -63,8 +81,8 @@ void print_token(Token* token) {
      KEYWORDS(X)
     #undef X
     case TOK_EOF:   printf("eof"); break;
-    case TOK_ERROR: printf("error(%s: %s(%d))", token->error.str, token->error.c_file, token->error.c_line); break;
-    case TOK_NUM:   printf("num(%.*s)", (int)token->num.len, token->num.cstr); break;
+    case TOK_ERROR: printf("error(%s: %s at %d)", token->error.str, token->error.c_file, token->error.c_line); break;
+    case TOK_VAL:   printf("val(%.*s)", (int)token->val.len, token->val.cstr); break;
     case TOK_IDENT: printf("ident(%.*s)", (int)token->ident.len, token->ident.cstr); break;
     default: assert(false && "UNREACHABLE");
   }
