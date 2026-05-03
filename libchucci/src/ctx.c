@@ -1,4 +1,4 @@
-#include "token.h"
+#include <token.h>
 #include <da_intern.h>
 #include <compiler.h>
 #include <da_path.h>
@@ -15,6 +15,9 @@ CompilerCtx new_ctx(CompilerOpt* options) {
   kv_init(ctx.included_files);
   #define X(a, b) ctx.keywords[a] = intern(ctx.table, sv_from_cstr(b));
   KEYWORDS(X)
+  #undef X
+  #define X(a, b) ctx.preprocessor_cmds[a] = intern(ctx.table, sv_from_cstr(b));
+  PREPROCESSOR_CMD(X)
   #undef X
   return ctx;
 }

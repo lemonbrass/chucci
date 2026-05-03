@@ -9,6 +9,7 @@
 extern const char* keyword_to_str[];
 extern const char* op_to_str[];
 extern const char* sep_to_str[];
+extern const char* tok_to_str[];
 extern bool is_op_table[256];
 
 #define is_op(ch) (is_op_table[ch])
@@ -63,7 +64,8 @@ extern bool is_op_table[256];
   X(SEP_RSQ, "]", ']') \
   X(SEP_COMMA, ",", ',') \
   X(SEP_SEMI, ";", ';') \
-  X(SEP_COLON, ":", ':') 
+  X(SEP_COLON, ":", ':') \
+  X(SEP_NEWLINE, "\n", '\n') 
 
 #define KEYWORDS(X) \
   X(KW_IF, "if") \
@@ -83,6 +85,27 @@ extern bool is_op_table[256];
   X(KW_FLOAT, "float") \
   X(KW_CHAR, "char") \
   X(KW_SIZEOF, "sizeof")
+
+#define PREPROCESSOR_CMD(X) \
+X(PP_DEFINE, "define") \
+X(PP_UNDEF, "undef") \
+X(PP_IF, "if") \
+X(PP_IFDEF, "ifdef") \
+X(PP_IFNDEF, "ifndef") \
+X(PP_ELIF, "elif") \
+X(PP_ELSE, "else") \
+X(PP_ENDIF, "endif") \
+X(PP_ERROR, "error") \
+X(PP_LINE, "line") \
+X(PP_PRAGMA, "pragma") \
+
+typedef enum {
+  #define X(a, b) a,
+  PREPROCESSOR_CMD(X)
+  #undef X
+  __preprocessor_cmd_len
+} PPCmd;
+
 
 typedef enum TokenKind {
   #define X(a, b, c) a,

@@ -11,17 +11,19 @@
 #define INTERN_LOAD_FACTOR 0.8
 #endif
 
-#define interned_eq(str1, str2) ((str1).cstr == (str2).cstr)
+#define interned_eq(str1, str2) ((str1).id == (str2).id)
 
 typedef uint32_t hash_t;
 typedef struct {
   char* cstr;
   uint32_t len;
+  uint32_t id;
 } interned_str;
 
 typedef struct {
  string str;
  hash_t h;
+ uint32_t id;
 } InternEntry;
 
 typedef struct {

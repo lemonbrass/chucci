@@ -63,8 +63,8 @@ string_view interned_to_sv(interned_str str) {
   return (string_view){ .cstr=str.cstr, .len=str.len };
 }
 
-interned_str str_to_interned(string str) {
-  return (interned_str) { .len=str.len, .cstr=(char*)str.cstr };
+interned_str str_to_interned(string str, uint32_t id) {
+  return (interned_str) { .len=str.len, .cstr=(char*)str.cstr, .id=id };
 }
 
 static InternEntry* intern_find_slot(InternTable* table, hash_t h, string_view str) {
@@ -75,6 +75,7 @@ static InternEntry* intern_find_slot(InternTable* table, hash_t h, string_view s
     if (entry->h == h && s_eq(str, entry->str)) return entry;
   }
 }
+
 
 static void resize_interntable(InternTable* table) {
   InternTable new_table = {0};
@@ -94,7 +95,7 @@ static void resize_interntable(InternTable* table) {
   *table = new_table;
 }
 
-interned_str intern(InternTable* table, string_view str) {
+static InternEntry* intern_find_and_fill(InternTable* table, string_view str) {
   if((float)table->len/(float)table->cap > INTERN_LOAD_FACTOR) resize_interntable(table);
   hash_t h = hash_str(str.cstr, str.len, table->seed);
   InternEntry* entry = intern_find_slot(table, h, str);
@@ -103,12 +104,16 @@ interned_str intern(InternTable* table, string_view str) {
     entry->str.cstr = arena_alloc(table->arena, str.len);
     entry->str.len = str.len;
     entry->h = h;
-    table->len++;
+    entry->id = table->len++;
     memcpy((char*)entry->str.cstr, str.cstr, str.len);
   }
-  return str_to_interned(entry->str);
+  return entry;
 }
 
+interned_str intern(InternTable* table, string_view str) {
+  InternEntry* entry = intern_find_and_fill(table, str);
+  return str_to_interned(entry->str, entry->id);
+}
 
 void free_interntable(InternTable** table) {
   kv_destroy((*table)->entries);
