@@ -12,14 +12,14 @@ typedef struct {
   CompilerCtx* ctx;
 } Lexer;
 
-Lexer new_lexer(string_view source, CompilerCtx* ctx);
+Lexer new_lexer(CompilerCtx* ctx);
 LexerMark mark_lexer(Lexer* lexer);
 void rewind_lexer(Lexer* lexer, LexerMark* mark);
-Token lex_next_token(Lexer* lexer);
-Token peek_next_token(Lexer* lexer);
-Token peek_nth_token(Lexer* lexer, size_t n);
 
-Token expect_token_kind(Lexer* lexer, TokenKind kind);
-void throw_lexer_error(Lexer* lexer, Token errtok, const char* errormsg);
+Token lex_next_token(Lexer* lexer);
+Token lexer_peek_token(Lexer* lexer);
+Token lexer_peek_nth(Lexer* lexer, size_t n);
+Token lexer_expect_token_kind(Lexer* lexer, TokenKind kind);
+void lexer_throw_error(Lexer* lexer, Token errtok, const char* errormsg);
 
 #endif

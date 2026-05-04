@@ -6,11 +6,20 @@
 
 
 void lexer2(jmp_buf errbuf) {
-  string_view source = sv_from_cstr(
+  jmp_buf onerror;
+  string source = str_from_cstr_copy(
     ""
   );
   CompilerOpt* opt = new_opt();
-  CompilerCtx ctx = new_ctx(opt);
-  Lexer lexer = new_lexer(source, &ctx);
-  
+  CompilerCtx ctx = new_ctx(opt, source, &onerror);
+  if (setjmp(onerror) == 0) {
+    Lexer lexer = new_lexer(&ctx);
+    free_ctx(&ctx);
+    free_opt(&opt);
+  }
+  else {
+    longjmp(errbuf, 1);
+    free_ctx(&ctx);
+    free_opt(&opt);
+  }
 }

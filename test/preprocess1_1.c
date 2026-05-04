@@ -1,4 +1,4 @@
-#include "compiler.h"
+#include <compiler.h>
 #include <ctx.h>
 #include <thirdparty/kvec.h>
 #include <da_string.h>
@@ -6,7 +6,9 @@
 #include <da_arena.h>
 #include <setjmp.h>
 
+
 void preprocess1_1(jmp_buf errbuf) {
+  jmp_buf onerror;
   string_view expected = sv_from_cstr(
     "int yoyo_ret() {\n"
     "  return 69420;\n"
@@ -17,7 +19,7 @@ void preprocess1_1(jmp_buf errbuf) {
     "   return yoyo_ret();\n"
     "}\n"
   );
-  string_view source = sv_from_cstr(
+  string source = str_from_cstr_copy(
       "#include <../test/inputs/yoyo.h>\n"
       "//This comment wont make it out alive :D \\\n"
       " This comment continues longer than you think....\n"
@@ -28,17 +30,27 @@ void preprocess1_1(jmp_buf errbuf) {
 
   CompilerOpt* opt = new_opt();
   opt_include_dir(opt, str_from_cstr_copy("."));
-  CompilerCtx ctx = new_ctx(opt);
-  
-  Preprocessor1 pp1 = new_pp1(source, &ctx);
-  string result = resolve_pp1(&pp1);
-  
-  // printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
+  CompilerCtx ctx = new_ctx(opt, source, &onerror);
 
-  if (!s_eq(expected, result)) longjmp(errbuf, 1);
+  if (setjmp(onerror) == 0) {
+    Preprocessor1 pp1 = new_pp1(&ctx);
+    string result = resolve_pp1(&pp1);
   
-  free_ctx(&ctx);
-  free_str(&result);
-  free_opt(&opt);
+    // printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
+
+    free_ctx(&ctx);
+    free_opt(&opt);
+    if (!s_eq(expected, result)) {
+      free_str(&result);
+      printf("Error: Preprocessor1 result doesnt match expected result.\n");
+      longjmp(errbuf, 1);
+    }
+    free_str(&result);
+  }
+  else {
+    free_ctx(&ctx);
+    free_opt(&opt);
+    longjmp(errbuf, 1);
+  }
 }
 

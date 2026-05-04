@@ -1,5 +1,6 @@
 #include <da_intern.h>
 #include <da_string.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <token.h>
 #include <cursor.h>
@@ -7,10 +8,10 @@
 #include <lexer.h>
 
 
-Lexer new_lexer(string_view source, CompilerCtx* ctx) {
+Lexer new_lexer(CompilerCtx* ctx) {
   Lexer lexer;
   lexer.ctx = ctx;
-  lexer.cursor = new_cursor(source);
+  lexer.cursor = new_cursor(str_to_sv(kv_top(ctx->source_stack)));
   return lexer;
 }
 
@@ -139,7 +140,7 @@ Token peek_next_token(Lexer* lexer) {
 }
 
 // TODO: A Token buffer in ctx, for caching lex_next_token in case of peek
-Token peek_nth_token(Lexer* lexer, size_t n) {
+Token lexer_peek_nth(Lexer* lexer, size_t n) {
   LexerMark mark = mark_lexer(lexer);
   Token token = lex_next_token(lexer);
   while (--n > 0 && token.kind != TOK_EOF) token = lex_next_token(lexer);
@@ -147,7 +148,7 @@ Token peek_nth_token(Lexer* lexer, size_t n) {
   return token;
 }
 
-Token expect_token_kind(Lexer* lexer, TokenKind kind) {
+Token lexer_expect_token_kind(Lexer* lexer, TokenKind kind) {
   Token token = lex_next_token(lexer);
   if (token.kind != kind) {
     printf("Error: expected %s, got ", tok_to_str[kind]);
@@ -155,12 +156,13 @@ Token expect_token_kind(Lexer* lexer, TokenKind kind) {
     printf("\n");
     rewind_cursor(&lexer->cursor, &token.pos);
     dump_cursor(&lexer->cursor);
-    assert(false && "Unexpected token");
+
+    longjmp(*lexer->ctx->onerror, 1);
   }
   return token;
 }
 
-void throw_lexer_error(Lexer* lexer, Token errtok, const char* errormsg) {
+void lexer_throw_error(Lexer* lexer, Token errtok, const char* errormsg) {
   printf("Error: %s: ", errormsg);
   print_token_pretty(&errtok);
   printf("\n");

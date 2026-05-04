@@ -23,7 +23,7 @@ bool is_path_relative(Path* path);
 bool path_exists(Path* path);
 PathType get_path_type(Path* path);
 
-bool path_cmp(Path* path1, Path* path2);
+bool path_eq(Path* path1, Path* path2);
 
 string read_file(Path* path);
 string path_to_str(Path* path);

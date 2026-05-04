@@ -23,7 +23,7 @@ Path new_path_from_cstr(char* pathstr) {
   return p;
 }
 
-bool path_cmp(Path* path1, Path* path2) {
+bool path_eq(Path* path1, Path* path2) {
   return path1->len == path2->len && strcmp(path1->cstr, path2->cstr) == 0;
 }
 

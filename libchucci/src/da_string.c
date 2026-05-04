@@ -35,7 +35,9 @@ string_view sv_from_cstr(const char* cstr) {
 }
 
 void free_ds(da_string* ds) {
-  if (!is_ds_sso(ds)) free(ds->_cstr);
+  if (!is_ds_sso(ds)) {
+    free(ds->_cstr);
+  }
   *ds = new_ds();
 }
 
@@ -46,8 +48,8 @@ void free_str(string* str) {
 
 
 void reset_ds(da_string* ds) {
-  if (is_ds_sso(ds)) memset(ds->_sso, 0, ds->len);
-  else memset(ds->_cstr, 0, ds->len);
+  // if (is_ds_sso(ds)) memset(ds->_sso, 0, ds->len);
+  // else memset(ds->_cstr, 0, ds->len);
   ds->len = 0;
 }
 

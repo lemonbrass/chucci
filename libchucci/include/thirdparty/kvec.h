@@ -87,4 +87,8 @@ int main() {
 						  : (v).n <= (size_t)(i)? (v).n = (i) + 1 \
 						  : 0), (v).a[(i)])
 
+// modification: added kv_top
+
+#define kv_top(v) kv_A((v), kv_size(v)-1)
+
 #endif

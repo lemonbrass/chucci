@@ -4,20 +4,22 @@
 #include <cursor.h>
 #include <da_string.h>
 #include <preprocess_1.h>
-#include <da_assert.h>
 
-Preprocessor1 new_pp1(string_view source, CompilerCtx* ctx) {
+Preprocessor1 new_pp1(CompilerCtx* ctx) {
   Preprocessor1 pp1 = {0};
-  pp1.cursor = new_cursor(source);
+  pp1.cursor = new_cursor(str_to_sv(kv_top(ctx->source_stack)));
   pp1.ctx = ctx;
   return pp1;
 }
 
-void check_cyclic_includes(Preprocessor1* pp1, Path path) {
+bool check_cyclic_includes(Preprocessor1* pp1, Path path) {
   for (size_t i = 0; i < kv_size(pp1->ctx->included_files); i++) {
     Path path2 = kv_A(pp1->ctx->included_files, i);
-    da_assert(!path_cmp(&path, &path2) && "Cyclic include detected");
+    if (path_eq(&path, &path2)) {
+      return true;
+    }
   }
+  return false;
 }
 
 void open_included_file(Preprocessor1* pp1, string_view file) {
@@ -31,15 +33,26 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
     Path path = new_path(ds_to_sv(&builder));
     
     if (path_exists(&path)) {
-      check_cyclic_includes(pp1, path);
-      kv_push(Path, pp1->ctx->included_files, path);
+      free_ds(&builder);
+      if (check_cyclic_includes(pp1, path)) {
+        free_path(&path);
+        dump_cursor(&pp1->cursor);
+        initiate_error(pp1->ctx, "Cyclic include detected");
+      }
       string contents = read_file(&path);
-      Preprocessor1 child = new_pp1(str_to_sv(contents), pp1->ctx);
+
+      kv_push(Path, pp1->ctx->included_files, path);
+      kv_push(string, pp1->ctx->source_stack, contents);
+      Preprocessor1 child = new_pp1(pp1->ctx);
       string processed = resolve_pp1(&child);
+      kv_pop(pp1->ctx->included_files);
+      kv_pop(pp1->ctx->source_stack);
+
       push_ds(&pp1->ctx->buf, str_to_sv(processed));
+
       free_str(&contents);
       free_str(&processed);
-      free_ds(&builder);
+      free_path(&path);
       return;
     }
     reset_ds(&builder);
@@ -47,7 +60,8 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
   }
   free_ds(&builder);
 
-  da_assert(false && "Included file not found");
+  dump_cursor(&pp1->cursor);
+  initiate_error(pp1->ctx, "Included file not found");
 }
 
 void resolve_include(Preprocessor1* pp1) {
@@ -66,12 +80,14 @@ void resolve_include(Preprocessor1* pp1) {
     }
     default:
       dump_cursor(&pp1->cursor);
-      da_assert(false && "Invalid character after #include");
+      initiate_error(pp1->ctx, "Invalid character after #include");
   }
   open_included_file(pp1, filename);
   advance_cursor_by(&pp1->cursor, filename.len+1); // skip filename and the closing "
   skip_whitespace_except_newline(&pp1->cursor);
-  if (!ch_match_cursor(&pp1->cursor, '\n') && !ch_match_cursor(&pp1->cursor, '\0')) da_assert(false && "expected newline or eof after #include");
+  if (!ch_match_cursor(&pp1->cursor, '\n') && !ch_match_cursor(&pp1->cursor, '\0')) {
+    initiate_error(pp1->ctx, "Expected newline or eof after #include");
+  }
 }
 
 string resolve_pp1(Preprocessor1* pp1) {
@@ -116,7 +132,10 @@ string resolve_pp1(Preprocessor1* pp1) {
         ch_expect_cursor(&pp1->cursor, '/');
         if (ch_match_cursor(&pp1->cursor, '*')) {
           while (peek(&pp1->cursor) != '*' || peek_next(&pp1->cursor) != '/') {
-            da_assert(peek_next(&pp1->cursor) != '\0' && "Unexpected EOF in block comment");
+            if (peek_next(&pp1->cursor) != '\0') {
+              dump_cursor(&pp1->cursor);
+              initiate_error(pp1->ctx, "Unexpected EOF in block comment");
+            }
             advance_cursor(&pp1->cursor);
           }
           ch_expect_cursor(&pp1->cursor, '*');

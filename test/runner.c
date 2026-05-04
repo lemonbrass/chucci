@@ -18,8 +18,6 @@ void da_intern1(jmp_buf buf);
 
 jmp_buf errbuf;
 
-jmp_buf assert_env;
-
 int main() {
   RUN_TEST(cursor1);
   RUN_TEST(preprocess1_1);

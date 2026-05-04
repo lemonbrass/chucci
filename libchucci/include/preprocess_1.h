@@ -20,7 +20,7 @@ typedef struct {
   CompilerCtx* ctx;
 } Preprocessor1;
 
-Preprocessor1 new_pp1(string_view source, CompilerCtx* ctx);
+Preprocessor1 new_pp1(CompilerCtx* ctx);
 string resolve_pp1(Preprocessor1* pp1);
 
 #endif
