@@ -1,4 +1,4 @@
-#include "da_string.h"
+#include <da_string.h>
 #include <token_source.h>
 #include <assert.h>
 #include <da_internmap.h>
@@ -23,16 +23,20 @@ void macro_def(Preprocessor2* pp2) {
 
       token = next_token(pp2->token_source);
       if (token.kind == SEP_COMMA) continue;
-      else if (token.kind == SEP_RPAREN) break;
+      else if (token.kind == SEP_RPAREN) {
+        token = next_token(pp2->token_source);
+        break;
+      }
       else throw_error(pp2->token_source, token, "Unexpected token in macro definition");
     }
   }
 
   // Parse body, for both function-like & object-like macros
   while (token.kind != TOK_EOF && token.kind != SEP_NEWLINE) {
-    token = next_token(pp2->token_source);
     kv_push(Token, def.body, token);
+    token = next_token(pp2->token_source);
   }
+  kv_push(Token, def.body, EOF_TOKEN(token.pos));
   imap_set(def, pp2->macros, def.name);
 }
 
@@ -40,7 +44,10 @@ void macro_def(Preprocessor2* pp2) {
 void objectlike_macro_use(Preprocessor2* pp2, MacroDef* def) {
   // recursively expand
   TokenSource src = ts_from_array(def->body, str_to_sv(kv_top(pp2->ctx->source_stack)));
-  Preprocessor2 child = new_pp2(pp2->ctx, &src);
+  Preprocessor2 child = {0};
+  child.token_source = &src;
+  child.ctx = pp2->ctx;
+  child.macros = pp2->macros;
   TokenArray result = resolve_pp2(&child);
   
   for (size_t i=0; i<kv_size(result); i++) {
@@ -53,16 +60,24 @@ void objectlike_macro_use(Preprocessor2* pp2, MacroDef* def) {
 
 void parse_functionlikemacro_call_args(Preprocessor2* pp2, internedmap_t(MacroArgBody)* args, MacroDef* def) {
   MacroArgBody arg = {0};
+  imap_init((*args));
   Token token = next_token(pp2->token_source);
   size_t arg_num = 0;
   
-  while (token.kind != SEP_RPAREN) {
+  while (true) {
     if (token.kind == TOK_EOF) throw_error(pp2->token_source, token, "Unexpected EOF during macro call.");
     else if (token.kind == SEP_COMMA) {
-      assert(arg_num <= kv_size(def->argnames));
+      assert(arg_num < kv_size(def->argnames));
+      imap_set(arg, (*args), kv_A(def->argnames, arg_num));
+      arg = (MacroArgBody){0}; // reset arg
+      arg_num++;
+    }
+    else if (token.kind == SEP_RPAREN) {
+      assert(arg_num < kv_size(def->argnames));
       imap_set(arg, (*args), kv_A(def->argnames, arg_num));
       kv_init(arg); // reset arg
       arg_num++;
+      break;
     }
     else {
       kv_push(Token, arg, token);
@@ -71,7 +86,7 @@ void parse_functionlikemacro_call_args(Preprocessor2* pp2, internedmap_t(MacroAr
   }
 }
 
-bool is_ident_macro_arg(Preprocessor2* pp2, interned_str ident, MacroDef* def) {
+bool is_ident_macro_arg(interned_str ident, MacroDef* def) {
   for (size_t i = 0; i < kv_size(def->argnames); i++) {
     interned_str arg = kv_A(def->argnames, i);
     if (interned_eq(arg, ident)) return true;
@@ -84,9 +99,9 @@ void expand_functionlike_macro_body(Preprocessor2* pp2, MacroDef* def, internedm
   for (size_t i=0; i<kv_size(def->body); i++) {
     Token token = kv_A(def->body, i);
     // If the body has a reference to an argumentname, replace argumentname with argumentbody
-    if (token.kind == TOK_IDENT && is_ident_macro_arg(pp2, token.ident, def)) {
+    if (token.kind == TOK_IDENT && is_ident_macro_arg(token.ident, def)) {
       MacroArgBody* arg = imap_get((*args), token.ident);
-      for (size_t i=0; i<kv_size(*arg); i++) kv_push(Token, pp2->stream, kv_A(*arg, i));
+      for (size_t j=0; j<kv_size(*arg) && kv_A(*arg, j).kind!=TOK_EOF; j++) kv_push(Token, *expanded, kv_A(*arg, j));
     }
     // else just push
     else kv_push(Token, *expanded, token);
@@ -106,13 +121,24 @@ void functionlike_macro_use(Preprocessor2* pp2, MacroDef* def) {
 
   // Recursively check expanded body for macro use
   TokenSource src = ts_from_array(expanded, str_to_sv(kv_top(pp2->ctx->source_stack)));
-  Preprocessor2 child = new_pp2(pp2->ctx, &src);
+  Preprocessor2 child = {0};
+  child.token_source = &src;
+  child.ctx = pp2->ctx;
+  child.macros = pp2->macros;
   TokenArray result = resolve_pp2(&child);
 
   // Push result to preprocessor stream
   for (size_t i=0; i<kv_size(result); i++) {
     kv_push(Token, pp2->stream, kv_A(result, i));
   }
+
+  for (size_t i=0;i<kv_size(args.data); i++) {
+    if (get_bit(&args.bitset, i) == 1) {
+      MacroArgBody arg = kv_A(args.data, i);
+      kv_destroy(arg);
+    }
+  }
+  imap_destroy(args);
   kv_destroy(expanded);
   kv_destroy(result);
 }

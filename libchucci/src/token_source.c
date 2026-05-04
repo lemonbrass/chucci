@@ -1,3 +1,4 @@
+#include "thirdparty/kvec.h"
 #include <cursor.h>
 #include <da_string.h>
 #include <lexer.h>
@@ -24,6 +25,7 @@ TokenSource ts_from_array(TokenArray array, string_view source) {
 Token next_token(TokenSource* src) {
   switch (src->kind) {
     case SK_ARRAY:
+      if (src->array.pos > src->array.tokens.n) return EOF_TOKEN(kv_top(src->array.tokens).pos);
       return kv_A(src->array.tokens, src->array.pos++);
     case SK_LEXER:
       return lex_next_token(src->lexer);
@@ -33,6 +35,7 @@ Token next_token(TokenSource* src) {
 Token peek_token(TokenSource* src) {
   switch (src->kind) {
     case SK_ARRAY:
+      assert(src->array.pos < src->array.tokens.n);
       return kv_A(src->array.tokens, src->array.pos);
     case SK_LEXER:
       return lexer_peek_token(src->lexer);

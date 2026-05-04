@@ -15,6 +15,7 @@ void preprocess1_1(jmp_buf buf);
 void preprocess1_2(jmp_buf buf);
 void lexer1(jmp_buf buf);
 void da_intern1(jmp_buf buf);
+void preprocess2_1(jmp_buf buf);
 
 jmp_buf errbuf;
 
@@ -24,5 +25,6 @@ int main() {
   RUN_TEST(preprocess1_2);
   RUN_TEST(da_intern1);
   RUN_TEST(lexer1);
+  RUN_TEST(preprocess2_1);
   return 0;
 }

@@ -24,15 +24,23 @@ int is_valid_bs(const bitset_t* bs) {
 }
 
 void resize_bs(bitset_t* bs) {
-  size_t new_num_bits = bs->num_bits==0 ? 16 : bs->num_bits*2;
-  bs->bytes = realloc(bs->bytes, (new_num_bits + 7)/8);
+  size_t old_num_bits = bs->num_bits;
+  size_t new_num_bits = old_num_bits == 0 ? 16 : old_num_bits * 2;
+
+  size_t old_bytes = (old_num_bits + 7) / 8;
+  size_t new_bytes = (new_num_bits + 7) / 8;
+
+  bs->bytes = realloc(bs->bytes, new_bytes);
   assert(bs->bytes != NULL);
-  memset(bs->bytes, 0, (new_num_bits + 7)/8 - (bs->num_bits + 7)/8);
+
+  memset(bs->bytes + old_bytes, 0, new_bytes - old_bytes);
+
+  bs->num_bits = new_num_bits;
 }
 
 int get_bit(bitset_t* bs, size_t bitid) {
     if (!is_valid_bs(bs)) return -1;
-    if (bitid >= bs->num_bits) resize_bs(bs);
+    while (bitid >= bs->num_bits) resize_bs(bs);
 
     size_t byteid = bitid >> 3;
     size_t offset = bitid & 7;
@@ -42,7 +50,7 @@ int get_bit(bitset_t* bs, size_t bitid) {
 
 int set_bit(bitset_t* bs, size_t bitid) {
     if (!is_valid_bs(bs)) return -1;
-    if (bitid >= bs->num_bits) resize_bs(bs);
+    while (bitid >= bs->num_bits) resize_bs(bs);
 
     size_t byteid = bitid >> 3;
     size_t offset = bitid & 7;
@@ -53,7 +61,7 @@ int set_bit(bitset_t* bs, size_t bitid) {
 
 int clear_bit(bitset_t* bs, size_t bitid) {
     if (!is_valid_bs(bs)) return -1;
-    if (bitid >= bs->num_bits) resize_bs(bs);
+    while (bitid >= bs->num_bits) resize_bs(bs);
 
     size_t byteid = bitid >> 3;
     size_t offset = bitid & 7;

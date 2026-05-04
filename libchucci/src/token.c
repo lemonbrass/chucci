@@ -1,5 +1,6 @@
 #include <da_string.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <token.h>
 
 const char* tok_to_str[__token_kind_count] = {
@@ -12,7 +13,7 @@ const char* tok_to_str[__token_kind_count] = {
   #define X(a, b, c) b,
   SEPARATORS(X)
   #undef X
-  "eof", "error", "ident", "value"
+  "eof", "error", "ident", "value", "\\n"
 };
 #define X(a, b, c) [(unsigned char)c] = true,
 bool is_op_table[256] = {
@@ -65,6 +66,7 @@ void print_token(Token* token) {
     case TOK_EOF:   printf("eof at (%zu, %zu)", token->pos.line, token->pos.col); break;
     case TOK_ERROR: printf("error(%s: %s at %d) at (%zu, %zu)", token->error.str, token->error.c_file, token->error.c_line, token->pos.line, token->pos.col); break;
     case TOK_VAL:   printf("val(%.*s) at (%zu, %zu)", (int)token->val.len, token->val.cstr, token->pos.line, token->pos.col); break;
+    case SEP_NEWLINE:   printf("sep(\\n) at (%zu, %zu)", token->pos.line, token->pos.col); break;
     case TOK_IDENT: printf("ident(%.*s) at (%zu, %zu)", (int)token->ident.len, token->ident.cstr, token->pos.line, token->pos.col); break;
     default: assert(false && "UNREACHABLE");
   }
@@ -84,6 +86,7 @@ void print_token_pretty(Token* token) {
     case TOK_ERROR: printf("error(%s: %s at %d)", token->error.str, token->error.c_file, token->error.c_line); break;
     case TOK_VAL:   printf("val(%.*s)", (int)token->val.len, token->val.cstr); break;
     case TOK_IDENT: printf("ident(%.*s)", (int)token->ident.len, token->ident.cstr); break;
+    case SEP_NEWLINE: printf("sep(\\n)"); break;
     default: assert(false && "UNREACHABLE");
   }
 }

@@ -65,7 +65,6 @@ extern bool is_op_table[256];
   X(SEP_COMMA, ",", ',') \
   X(SEP_SEMI, ";", ';') \
   X(SEP_COLON, ":", ':') \
-  X(SEP_NEWLINE, "\n", '\n') 
 
 #define KEYWORDS(X) \
   X(KW_IF, "if") \
@@ -121,6 +120,7 @@ typedef enum TokenKind {
   TOK_ERROR,
   TOK_IDENT,
   TOK_VAL,
+  SEP_NEWLINE,
   __token_kind_count,
 } TokenKind;
 

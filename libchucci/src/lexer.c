@@ -77,7 +77,7 @@ Token lex_str(Lexer* lexer) {
 }
 
 Token lex_next_token(Lexer* lexer) {
-  skip_whitespace(&lexer->cursor);
+  skip_whitespace_except_newline(&lexer->cursor);
   char current = peek(&lexer->cursor);
   CursorMark pos = mark_cursor(&lexer->cursor);
   Token token = ERROR_TOKEN(pos, "Unknown token");
@@ -108,6 +108,10 @@ Token lex_next_token(Lexer* lexer) {
       token = EOF_TOKEN(pos);
       advance_cursor(&lexer->cursor);
       goto end;
+    case '\n':
+      token = new_token(pos, SEP_NEWLINE);
+      advance_cursor(&lexer->cursor);
+      goto end;
     #define X(a, b, c) \
     case c: token = new_token(pos, a);\
             advance_cursor(&lexer->cursor);\
@@ -132,7 +136,7 @@ void rewind_lexer(Lexer* lexer, LexerMark* mark) {
   rewind_cursor(&lexer->cursor, mark);
 }
 
-Token peek_next_token(Lexer* lexer) {
+Token lexer_peek_token(Lexer* lexer) {
   LexerMark mark = mark_lexer(lexer);
   Token token = lex_next_token(lexer);
   rewind_lexer(lexer, &mark);
