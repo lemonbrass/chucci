@@ -11,6 +11,8 @@ for arg in "$@"; do
       ./test/all_tests
     elif [ $arg == "gdb" ]; then
       gdb ./test/all_tests
+    elif [ $arg == "repl" ]; then
+      ./cli/chuccic
     fi
 done
 

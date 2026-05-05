@@ -1,5 +1,4 @@
 #include <da_string.h>
-#include <assert.h>
 #include <ctype.h>
 #include <cursor.h>
 #include <stdbool.h>
@@ -58,7 +57,7 @@ string_view get_till_newline_or_eof(Cursor* cursor) {
 }
 
 char peek(Cursor* cursor) {
-  assert(is_cursor_valid(cursor));
+  if (!is_cursor_valid(cursor)) return '\0';
   return cursor->source.cstr[cursor->id];
 }
 
@@ -84,7 +83,7 @@ char advance_cursor(Cursor* cursor) {
 }
 
 char peek_next(Cursor *cursor) {
-  assert(cursor->source.len > cursor->id + 1);
+  if (cursor->source.len < cursor->id + 1) return '\0';
   return cursor->source.cstr[cursor->id+1];
 }
 
@@ -116,7 +115,7 @@ bool ch_match_cursor(Cursor *cursor, char expected) {
 }
 
 bool is_cursor_valid(Cursor* cursor) {
-  return cursor->source.len >= cursor->id;
+  return cursor->source.len > cursor->id;
 }
 
 void dump_cursor(Cursor* c) {

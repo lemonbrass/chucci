@@ -27,6 +27,10 @@ ChucciCompiler new_compiler(CompilerOpt* opt, string source, jmp_buf* onerror) {
   return ctx;
 }
 
+void add_source(ChucciCompiler* ctx, string source) {
+  kv_push(string, ctx->source_stack, source);
+}
+
 CompilerOpt* new_opt() {
   CompilerOpt* opt = malloc(sizeof(CompilerOpt));
   kv_init(opt->include_dirs);

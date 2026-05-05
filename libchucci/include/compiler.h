@@ -28,6 +28,7 @@ typedef struct {
 
 ChucciCompiler new_compiler(CompilerOpt* opt, string source, jmp_buf* onerror);
 TokenArray compiler_preprocess(ChucciCompiler* ctx);
+void add_source(ChucciCompiler* ctx, string source);
 CompilerOpt* new_opt();
 void opt_include_dir(CompilerOpt* opt, string dir);
 void free_opt(CompilerOpt** opt);
