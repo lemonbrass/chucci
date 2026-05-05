@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <token.h>
 #include <cursor.h>
-#include <ctx.h>
+#include <compiler.h>
 #include <lexer.h>
 
 
-Lexer new_lexer(CompilerCtx* ctx) {
+Lexer new_lexer(ChucciCompiler* ctx) {
   Lexer lexer;
   lexer.ctx = ctx;
   lexer.cursor = new_cursor(str_to_sv(kv_top(ctx->source_stack)));

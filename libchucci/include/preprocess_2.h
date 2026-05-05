@@ -4,18 +4,18 @@
 #include <thirdparty/kvec.h>
 #include <token_source.h>
 #include <da_internmap.h>
-#include <ctx.h>
+#include <compiler.h>
 #include <pp2_macro.h>
 
 typedef struct Preprocessor2 {
-  CompilerCtx* ctx;
+  ChucciCompiler* ctx;
   TokenArray stream;
   internedmap_t(MacroDef) macros;
   TokenSource* token_source;
 } Preprocessor2;
 
 void free_pp2(Preprocessor2* pp2);
-Preprocessor2 new_pp2(CompilerCtx* ctx, TokenSource* token_source);
+Preprocessor2 new_pp2(ChucciCompiler* ctx, TokenSource* token_source);
 TokenArray resolve_pp2(Preprocessor2* pp2);
 TokenArray recursively_expand(Preprocessor2* pp2, TokenSource* token_source);
 

@@ -12,7 +12,7 @@ void free_pp2(Preprocessor2* pp2) {
   imap_destroy(pp2->macros, free_macro_def);
 }
 
-Preprocessor2 new_pp2(CompilerCtx* ctx, TokenSource* token_source) {
+Preprocessor2 new_pp2(ChucciCompiler* ctx, TokenSource* token_source) {
   Preprocessor2 pp2 = {0};
   pp2.ctx = ctx;
   pp2.token_source = token_source;

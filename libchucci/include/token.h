@@ -140,6 +140,9 @@ typedef struct {
   };
 } Token;
 
+typedef kvec_t(Token) TokenArray;
+
+
 #define new_token(pos, data) \
    _Generic(data,\
    interned_str: new_tok_ident, \

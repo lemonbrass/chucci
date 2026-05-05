@@ -1,4 +1,4 @@
-#include <ctx.h>
+#include <compiler.h>
 #include <da_path.h>
 #include <stdio.h>
 #include <thirdparty/kvec.h>
@@ -6,7 +6,7 @@
 #include <da_string.h>
 #include <preprocess_1.h>
 
-Preprocessor1 new_pp1(CompilerCtx* ctx) {
+Preprocessor1 new_pp1(ChucciCompiler* ctx) {
   Preprocessor1 pp1 = {0};
   pp1.cursor = new_cursor(str_to_sv(kv_top(ctx->source_stack)));
   pp1.ctx = ctx;

@@ -1,4 +1,4 @@
-#include "ctx.h"
+#include <compiler.h>
 #include <thirdparty/kvec.h>
 #include <cursor.h>
 #include <da_string.h>
@@ -60,13 +60,13 @@ Token peek_nth(TokenSource* src, size_t n) {
   }
 }
 
-Token expect_token_kind(TokenSource* src, TokenKind kind, CompilerCtx* ctx) {
+Token expect_token_kind(TokenSource* src, TokenKind kind, ChucciCompiler* ctx) {
   Token token = next_token(src);
   if (token.kind != kind) throw_error(src, token, "Unexpected token", ctx);
   return token;
 }
 
-void throw_error(TokenSource* src, Token errtok, const char* errormsg, CompilerCtx* ctx) {
+void throw_error(TokenSource* src, Token errtok, const char* errormsg, ChucciCompiler* ctx) {
   printf("Error: %s: ", errormsg);
   print_token_pretty(&errtok);
   printf("\n");

@@ -2,17 +2,17 @@
 #define LEXER_H
 
 #include <token.h>
-#include <ctx.h>
+#include <compiler.h>
 #include <cursor.h>
 
 typedef CursorMark LexerMark;
 
 typedef struct {
   Cursor cursor;
-  CompilerCtx* ctx;
+  ChucciCompiler* ctx;
 } Lexer;
 
-Lexer new_lexer(CompilerCtx* ctx);
+Lexer new_lexer(ChucciCompiler* ctx);
 LexerMark mark_lexer(Lexer* lexer);
 void rewind_lexer(Lexer* lexer, LexerMark* mark);
 

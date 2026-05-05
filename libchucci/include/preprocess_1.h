@@ -8,7 +8,7 @@ THIS WILL ONLY RESOLVE #include AND comments
 #define PREPROCESSOR1_H
 
 
-#include <ctx.h>
+#include <compiler.h>
 #include <da_path.h>
 #include <thirdparty/kvec.h>
 #include <da_arena.h>
@@ -17,10 +17,10 @@ THIS WILL ONLY RESOLVE #include AND comments
 
 typedef struct {
   Cursor cursor;
-  CompilerCtx* ctx;
+  ChucciCompiler* ctx;
 } Preprocessor1;
 
-Preprocessor1 new_pp1(CompilerCtx* ctx);
+Preprocessor1 new_pp1(ChucciCompiler* ctx);
 string resolve_pp1(Preprocessor1* pp1);
 
 #endif

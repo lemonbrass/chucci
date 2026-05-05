@@ -1,5 +1,4 @@
 #include <compiler.h>
-#include <ctx.h>
 #include <thirdparty/kvec.h>
 #include <da_string.h>
 #include <preprocess_1.h>
@@ -30,7 +29,7 @@ void preprocess1_1(jmp_buf errbuf) {
 
   CompilerOpt* opt = new_opt();
   opt_include_dir(opt, str_from_cstr_copy("."));
-  CompilerCtx ctx = new_ctx(opt, source, &onerror);
+  ChucciCompiler ctx = new_compiler(opt, source, &onerror);
 
   if (setjmp(onerror) == 0) {
     Preprocessor1 pp1 = new_pp1(&ctx);
@@ -38,8 +37,7 @@ void preprocess1_1(jmp_buf errbuf) {
   
     // printf("Preprocessor1 result: \n[%.*s]\nexpected: \n[%.*s]\n", (int)result.len, result.cstr, (int)expected.len, expected.cstr);
 
-    free_ctx(&ctx);
-    free_opt(&opt);
+    free_compiler(&ctx);
     if (!s_eq(expected, result)) {
       free_str(&result);
       printf("Error: Preprocessor1 result doesnt match expected result.\n");
@@ -48,8 +46,7 @@ void preprocess1_1(jmp_buf errbuf) {
     free_str(&result);
   }
   else {
-    free_ctx(&ctx);
-    free_opt(&opt);
+    free_compiler(&ctx);
     longjmp(errbuf, 1);
   }
 }
