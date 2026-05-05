@@ -131,7 +131,7 @@ typedef struct {
 } TokenError;
 
 typedef struct {
-  CursorMark pos;
+  Cursor pos;
   TokenKind kind;
   union {
     interned_str ident;
@@ -155,13 +155,12 @@ typedef kvec_t(Token) TokenArray;
 #define EOF_TOKEN(p) ((Token) { .kind=TOK_EOF, .pos=p })
 
 
-Token new_tok_error(CursorMark pos, int c_line, const char* c_file, const char* error);
-Token new_tok_ident(CursorMark pos, interned_str name);
-Token new_tok_ident(CursorMark pos, interned_str name);
-Token new_tok_val(CursorMark pos, string_view val);
-Token new_tok_simple(CursorMark pos, TokenKind keyword);
+Token new_tok_error(Cursor pos, int c_line, const char* c_file, const char* error);
+Token new_tok_ident(Cursor pos, interned_str name);
+Token new_tok_val(Cursor pos, string_view val);
+Token new_tok_simple(Cursor pos, TokenKind keyword);
 
 void print_token(Token* token);
 void print_token_pretty(Token* token);
-
+size_t get_token_len(Token token);
 #endif

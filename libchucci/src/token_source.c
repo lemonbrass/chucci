@@ -70,11 +70,6 @@ void throw_error(TokenSource* src, Token errtok, const char* errormsg, ChucciCom
   printf("Error: %s: ", errormsg);
   print_token_pretty(&errtok);
   printf("\n");
-  Cursor cursor;
-  cursor.line = errtok.pos.line;
-  cursor.id = errtok.pos.id;
-  cursor.col = errtok.pos.col;
-  cursor.source = (src->kind==SK_LEXER) ? src->lexer->cursor.source : src->array.source;
-  dump_cursor(&cursor);
+  dump_cursor(&errtok.pos);
   initiate_error(ctx);
 }

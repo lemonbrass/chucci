@@ -21,6 +21,7 @@ ChucciCompiler new_compiler(CompilerOpt* opt, string source, jmp_buf* onerror) {
   kv_push(string, ctx.source_stack, source);
   ctx.onerror = onerror;
   kv_init(ctx.included_files);
+  kv_init(ctx.macro_stack);
   #define X(a, b) ctx.keywords[a] = intern(ctx.table, sv_from_cstr(b));
   KEYWORDS(X)
   #undef X
@@ -74,6 +75,7 @@ void free_compiler(ChucciCompiler* ctx) {
   }
   kv_destroy(ctx->included_files);
   kv_destroy(ctx->source_stack);
+  kv_destroy(ctx->macro_stack);
   imap_destroy(ctx->macros, free_macro_def);
   free_ds(&ctx->buf);
   free_interntable(&ctx->table);

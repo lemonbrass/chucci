@@ -21,7 +21,17 @@ bool is_op_table[256] = {
 };
 #undef X
 
-Token new_tok_ident(CursorMark pos, interned_str name) {
+size_t get_token_len(Token token) {
+  if (token.kind < TOK_EOF) return strlen(tok_to_str[token.kind]);
+  else if (token.kind == TOK_EOF) return 1;
+  else if (token.kind == TOK_VAL) return token.val.len;
+  else if (token.kind == TOK_IDENT) return token.ident.len;
+  else if (token.kind == SEP_NEWLINE) return 1;
+  else return 0;
+}
+
+
+Token new_tok_ident(Cursor pos, interned_str name) {
   Token token;
   token.kind = TOK_IDENT;
   token.pos = pos;
@@ -29,7 +39,7 @@ Token new_tok_ident(CursorMark pos, interned_str name) {
   return token;
 }
 
-Token new_tok_error(CursorMark pos, int c_line, const char* c_file, const char* error) {
+Token new_tok_error(Cursor pos, int c_line, const char* c_file, const char* error) {
   Token token;
   token.kind = TOK_ERROR;
   token.pos = pos;
@@ -37,7 +47,7 @@ Token new_tok_error(CursorMark pos, int c_line, const char* c_file, const char* 
   return token;
 }
 
-Token new_tok_val(CursorMark pos, string_view val) {
+Token new_tok_val(Cursor pos, string_view val) {
   Token token;
   token.kind = TOK_VAL;
   token.pos = pos;
@@ -45,7 +55,7 @@ Token new_tok_val(CursorMark pos, string_view val) {
   return token;
 }
 
-Token new_tok_simple(CursorMark pos, TokenKind kind) {
+Token new_tok_simple(Cursor pos, TokenKind kind) {
   Token token;
   token.kind = kind;
   token.pos = pos;

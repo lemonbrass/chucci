@@ -16,7 +16,7 @@ Lexer new_lexer(ChucciCompiler* ctx) {
 }
 
 Token lex_ident(Lexer* lexer) {
-  CursorMark pos = mark_cursor(&lexer->cursor);
+  Cursor pos = lexer->cursor;
   advance_cursor(&lexer->cursor);
   char ch;
   while ((ch = peek(&lexer->cursor)), is_alpha(ch) || ch == '_' || is_num(ch)) {
@@ -34,7 +34,7 @@ Token lex_ident(Lexer* lexer) {
 
 // TODO: All other types of num lexing
 Token lex_num(Lexer* lexer) {
-  CursorMark pos = mark_cursor(&lexer->cursor);
+  Cursor pos = lexer->cursor;
   advance_cursor(&lexer->cursor);
   bool has_decimal = false;
   while (true) {
@@ -53,7 +53,7 @@ Token lex_num(Lexer* lexer) {
 }
 
 Token lex_op(Lexer* lexer) {
-  CursorMark pos = mark_cursor(&lexer->cursor);
+  Cursor pos = lexer->cursor;
 
   #define X(a, b, c) if (str_match_cursor(&lexer->cursor, sv_from_cstr(b))) return new_token(pos, a);
   OPERATORS(X)
@@ -64,7 +64,7 @@ Token lex_op(Lexer* lexer) {
 }
 
 Token lex_str(Lexer* lexer) {
-  CursorMark pos = mark_cursor(&lexer->cursor);
+  Cursor pos = lexer->cursor;
   advance_cursor(&lexer->cursor);
   char ch;
   while ((ch = peek(&lexer->cursor), ch != '\"')) {
@@ -79,7 +79,7 @@ Token lex_str(Lexer* lexer) {
 Token lex_next_token(Lexer* lexer) {
   skip_whitespace_except_newline(&lexer->cursor);
   char current = peek(&lexer->cursor);
-  CursorMark pos = mark_cursor(&lexer->cursor);
+  Cursor pos = lexer->cursor;
   Token token = ERROR_TOKEN(pos, "Unknown token");
 
   if (is_alpha(current) || current == '_') {
@@ -158,8 +158,7 @@ Token lexer_expect_token_kind(Lexer* lexer, TokenKind kind) {
     printf("Error: expected %s, got ", tok_to_str[kind]);
     print_token_pretty(&token);
     printf("\n");
-    rewind_cursor(&lexer->cursor, &token.pos);
-    dump_cursor(&lexer->cursor);
+    dump_cursor(&token.pos);
 
     longjmp(*lexer->ctx->onerror, 1);
   }
@@ -170,7 +169,6 @@ void lexer_throw_error(Lexer* lexer, Token errtok, const char* errormsg) {
   printf("Error: %s: ", errormsg);
   print_token_pretty(&errtok);
   printf("\n");
-  rewind_cursor(&lexer->cursor, &errtok.pos);
-  dump_cursor(&lexer->cursor);
+  dump_cursor(&errtok.pos);
   assert(false);
 }

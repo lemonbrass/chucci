@@ -20,7 +20,7 @@ int main() {
         push_char_ds(&dsinput, (unsigned char)ch);
       }
       if (s_eq(ds_to_sv(&dsinput), sv_from_cstr("exit"))) break;
-      push_char_ds(&dsinput, '\n');
+      push_char_ds(&dsinput, '\0');
       string source = ds_to_str_copy(&dsinput);
       add_source(&ctx, source);
       if (s_eq(source, sv_from_cstr("exit"))) break;

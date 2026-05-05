@@ -13,6 +13,7 @@ struct Preprocessor2;
 typedef internedmap_t(TokenArray) MacroCallArgMap;
 
 typedef struct MacroDef{
+  bool is_functionlike;
   kvec_t(interned_str) argnames;
   TokenArray body;
   interned_str name;

@@ -1,7 +1,7 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-#include "da_internmap.h"
+#include <da_internmap.h>
 #include <da_string.h>
 #include <setjmp.h>
 #include <token.h>
@@ -21,6 +21,7 @@ typedef struct {
 typedef struct {
   CompilerOpt* options;
   kvec_t(Path) included_files;
+  kvec_t(interned_str) macro_stack;
   InternTable* table;
   kvec_t(string) source_stack;
   interned_str keywords[__token_kind_count];
