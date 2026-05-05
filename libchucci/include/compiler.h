@@ -1,6 +1,7 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
+#include "da_internmap.h"
 #include <da_string.h>
 #include <setjmp.h>
 #include <token.h>
@@ -10,6 +11,8 @@
 #include <stddef.h>
 #include <thirdparty/kvec.h>
 
+
+struct MacroDef;
 
 typedef struct {
   kvec_t(string) include_dirs;
@@ -23,6 +26,7 @@ typedef struct {
   interned_str keywords[__token_kind_count];
   interned_str preprocessor_cmds[__preprocessor_cmd_len];
   da_string buf; // for internal memory reuse
+  internedmap_t(struct MacroDef) macros;
   jmp_buf* onerror;
 } ChucciCompiler;
 

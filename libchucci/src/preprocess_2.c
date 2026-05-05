@@ -8,15 +8,10 @@
 #include <preprocess_2.h>
 #include <token_source.h>
 
-void free_pp2(Preprocessor2* pp2) {
-  imap_destroy(pp2->macros, free_macro_def);
-}
-
 Preprocessor2 new_pp2(ChucciCompiler* ctx, TokenSource* token_source) {
   Preprocessor2 pp2 = {0};
   pp2.ctx = ctx;
   pp2.token_source = token_source;
-  imap_init(pp2.macros);
   return pp2;
 }
 
@@ -32,7 +27,7 @@ void step_pp2(Preprocessor2* pp2, Token* tok) {
       }
       break;
     case TOK_IDENT:
-      if (imap_has(pp2->macros, tok->ident) == 1) {
+      if (imap_has(pp2->ctx->macros, tok->ident) == 1) {
         macro_use(pp2, tok);
         break;
       }
@@ -54,6 +49,5 @@ TokenArray recursively_expand(Preprocessor2 *pp2, TokenSource *token_source) {
   Preprocessor2 child = {0};
   child.token_source = token_source;
   child.ctx = pp2->ctx;
-  child.macros = pp2->macros;
   return resolve_pp2(&child);
 }

@@ -1,6 +1,8 @@
-#include "lexer.h"
-#include "preprocess_2.h"
-#include "token_source.h"
+#include <da_internmap.h>
+#include <lexer.h>
+#include <pp2_macro.h>
+#include <preprocess_2.h>
+#include <token_source.h>
 #include <da_string.h>
 #include <thirdparty/kvec.h>
 #include <setjmp.h>
@@ -12,6 +14,7 @@
 
 ChucciCompiler new_compiler(CompilerOpt* opt, string source, jmp_buf* onerror) {
   ChucciCompiler ctx = {0};
+  imap_init(ctx.macros);
   ctx.options = opt;
   ctx.buf = new_ds();
   ctx.table = new_interntable();
@@ -55,7 +58,6 @@ TokenArray compiler_preprocess(ChucciCompiler* compiler) {
   TokenSource src = ts_from_lexer(&lexer);
   Preprocessor2 pp2 = new_pp2(compiler, &src);
   TokenArray result = resolve_pp2(&pp2);
-  free_pp2(&pp2);
   return result;
 }
 
@@ -72,6 +74,7 @@ void free_compiler(ChucciCompiler* ctx) {
   }
   kv_destroy(ctx->included_files);
   kv_destroy(ctx->source_stack);
+  imap_destroy(ctx->macros, free_macro_def);
   free_ds(&ctx->buf);
   free_interntable(&ctx->table);
   free_opt(&ctx->options);

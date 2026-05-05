@@ -53,7 +53,7 @@ void macro_def(Preprocessor2* pp2) {
     token = next_token(pp2->token_source);
   }
   // kv_push(Token, def.body, EOF_TOKEN(token.pos));
-  imap_set(def, pp2->macros, def.name);
+  imap_set(def, pp2->ctx->macros, def.name);
 }
 
 
@@ -160,7 +160,7 @@ void functionlike_macro_use(Preprocessor2* pp2, MacroDef* def) {
 }
 
 void macro_use(Preprocessor2* pp2, Token* usage_tok) {
-  MacroDef* def = imap_get(pp2->macros, usage_tok->ident);
+  MacroDef* def = imap_get(pp2->ctx->macros, usage_tok->ident);
   if (!def) return;
   // Object-like macros
   if (kv_size(def->argnames) == 0)
