@@ -93,10 +93,11 @@ void destroy_macro_call_arg(TokenArray* arg) {
 void parse_functionlikemacro_call_args(Preprocessor2* pp2, MacroCallArgMap* args, MacroDef* def) {
   TokenArray arg = {0};
   imap_init(*args);
-  Token token = next_token(pp2->token_source);
+  Token token = expect_token_kind(pp2->token_source, SEP_LPAREN, pp2->ctx);
   size_t arg_num = 0;
-  size_t depth = 0;
+  size_t depth = 1;
   
+  token = next_token(pp2->token_source);
   while (true) {
     if (token.kind == TOK_EOF) throw_error(pp2->token_source, token, "Unexpected EOF during macro call.", pp2->ctx);
     else if (token.kind == SEP_LPAREN) {
