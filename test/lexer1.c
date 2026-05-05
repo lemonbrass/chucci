@@ -23,8 +23,8 @@ void lexer1(jmp_buf errbuf) {
 
     size_t i = 0;
     for (Token token = lex_next_token(&lexer); ; token = lex_next_token(&lexer)) {
-      print_token_pretty(&token);
-      printf("\n");
+      // print_token_pretty(&token);
+      // printf("\n");
       if (token.kind != expected[i]) {
         free_ctx(&ctx);
         free_opt(&opt);

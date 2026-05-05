@@ -9,14 +9,7 @@
 #include <token_source.h>
 
 void free_pp2(Preprocessor2* pp2) {
-  for (size_t i=0;i<kv_size(pp2->macros.data); i++) {
-    if (get_bit(&pp2->macros.bitset, i) == 1) {
-      MacroDef def = kv_A(pp2->macros.data, i);
-      kv_destroy(def.argnames);
-      kv_destroy(def.body);
-    }
-  }
-  imap_destroy(pp2->macros);
+  imap_destroy(pp2->macros, free_macro_def);
 }
 
 Preprocessor2 new_pp2(CompilerCtx* ctx, TokenSource* token_source) {
@@ -30,7 +23,7 @@ Preprocessor2 new_pp2(CompilerCtx* ctx, TokenSource* token_source) {
 void step_pp2(Preprocessor2* pp2, Token* tok) {
   switch (tok->kind) {
     case OP_PREPROCESS:
-      *tok = expect_token_kind(pp2->token_source, TOK_IDENT);
+      *tok = expect_token_kind(pp2->token_source, TOK_IDENT, pp2->ctx);
       if (interned_eq(tok->ident, pp2->ctx->preprocessor_cmds[PP_DEFINE])) {
         macro_def(pp2);
         break;
@@ -55,4 +48,12 @@ TokenArray resolve_pp2(Preprocessor2* pp2) {
     step_pp2(pp2, &tok);
   }
   return pp2->stream;
+}
+
+TokenArray recursively_expand(Preprocessor2 *pp2, TokenSource *token_source) {
+  Preprocessor2 child = {0};
+  child.token_source = token_source;
+  child.ctx = pp2->ctx;
+  child.macros = pp2->macros;
+  return resolve_pp2(&child);
 }

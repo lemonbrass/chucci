@@ -1,5 +1,6 @@
 #include <ctx.h>
 #include <da_path.h>
+#include <stdio.h>
 #include <thirdparty/kvec.h>
 #include <cursor.h>
 #include <da_string.h>
@@ -35,9 +36,10 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
     if (path_exists(&path)) {
       free_ds(&builder);
       if (check_cyclic_includes(pp1, path)) {
+        printf("Error: Cyclic includes detected\n");
         free_path(&path);
         dump_cursor(&pp1->cursor);
-        initiate_error(pp1->ctx, "Cyclic include detected");
+        initiate_error(pp1->ctx);
       }
       string contents = read_file(&path);
 
@@ -60,8 +62,9 @@ void open_included_file(Preprocessor1* pp1, string_view file) {
   }
   free_ds(&builder);
 
+  printf("Error: Included file not found\n");
   dump_cursor(&pp1->cursor);
-  initiate_error(pp1->ctx, "Included file not found");
+  initiate_error(pp1->ctx);
 }
 
 void resolve_include(Preprocessor1* pp1) {
@@ -79,14 +82,16 @@ void resolve_include(Preprocessor1* pp1) {
       break;
     }
     default:
+      printf("Error: Invalid character after #include\n");
       dump_cursor(&pp1->cursor);
-      initiate_error(pp1->ctx, "Invalid character after #include");
+      initiate_error(pp1->ctx);
   }
   open_included_file(pp1, filename);
   advance_cursor_by(&pp1->cursor, filename.len+1); // skip filename and the closing "
   skip_whitespace_except_newline(&pp1->cursor);
   if (!ch_match_cursor(&pp1->cursor, '\n') && !ch_match_cursor(&pp1->cursor, '\0')) {
-    initiate_error(pp1->ctx, "Expected newline or eof after #include");
+    printf("Error: Expected newline or eof after #include\n");
+    initiate_error(pp1->ctx);
   }
 }
 
@@ -133,8 +138,9 @@ string resolve_pp1(Preprocessor1* pp1) {
         if (ch_match_cursor(&pp1->cursor, '*')) {
           while (peek(&pp1->cursor) != '*' || peek_next(&pp1->cursor) != '/') {
             if (peek_next(&pp1->cursor) != '\0') {
+              printf("Error: Unexpected EOF in block comment\n");
               dump_cursor(&pp1->cursor);
-              initiate_error(pp1->ctx, "Unexpected EOF in block comment");
+              initiate_error(pp1->ctx);
             }
             advance_cursor(&pp1->cursor);
           }

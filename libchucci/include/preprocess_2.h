@@ -17,5 +17,6 @@ typedef struct Preprocessor2 {
 void free_pp2(Preprocessor2* pp2);
 Preprocessor2 new_pp2(CompilerCtx* ctx, TokenSource* token_source);
 TokenArray resolve_pp2(Preprocessor2* pp2);
+TokenArray recursively_expand(Preprocessor2* pp2, TokenSource* token_source);
 
 #endif

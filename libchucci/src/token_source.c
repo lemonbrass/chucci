@@ -1,4 +1,5 @@
-#include "thirdparty/kvec.h"
+#include "ctx.h"
+#include <thirdparty/kvec.h>
 #include <cursor.h>
 #include <da_string.h>
 #include <lexer.h>
@@ -25,17 +26,25 @@ TokenSource ts_from_array(TokenArray array, string_view source) {
 Token next_token(TokenSource* src) {
   switch (src->kind) {
     case SK_ARRAY:
-      if (src->array.pos > src->array.tokens.n) return EOF_TOKEN(kv_top(src->array.tokens).pos);
+      if (src->array.pos >= src->array.tokens.n) return EOF_TOKEN(kv_top(src->array.tokens).pos);
       return kv_A(src->array.tokens, src->array.pos++);
     case SK_LEXER:
       return lex_next_token(src->lexer);
   }
 }
 
+void print_token_array(TokenArray* array) {
+  for (size_t i=0; i<kv_size(*array); i++) {
+    print_token_pretty(&kv_A(*array, i));
+    printf(" ");
+  }
+  printf("\n");
+}
+
 Token peek_token(TokenSource* src) {
   switch (src->kind) {
     case SK_ARRAY:
-      assert(src->array.pos < src->array.tokens.n);
+      if (src->array.pos >= src->array.tokens.n) return EOF_TOKEN(kv_top(src->array.tokens).pos);
       return kv_A(src->array.tokens, src->array.pos);
     case SK_LEXER:
       return lexer_peek_token(src->lexer);
@@ -51,13 +60,13 @@ Token peek_nth(TokenSource* src, size_t n) {
   }
 }
 
-Token expect_token_kind(TokenSource* src, TokenKind kind) {
+Token expect_token_kind(TokenSource* src, TokenKind kind, CompilerCtx* ctx) {
   Token token = next_token(src);
-  assert(token.kind == kind);
+  if (token.kind != kind) throw_error(src, token, "Unexpected token", ctx);
   return token;
 }
 
-void throw_error(TokenSource* src, Token errtok, const char* errormsg) {
+void throw_error(TokenSource* src, Token errtok, const char* errormsg, CompilerCtx* ctx) {
   printf("Error: %s: ", errormsg);
   print_token_pretty(&errtok);
   printf("\n");
@@ -67,5 +76,5 @@ void throw_error(TokenSource* src, Token errtok, const char* errormsg) {
   cursor.col = errtok.pos.col;
   cursor.source = (src->kind==SK_LEXER) ? src->lexer->cursor.source : src->array.source;
   dump_cursor(&cursor);
-  assert(false);
+  initiate_error(ctx);
 }

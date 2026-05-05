@@ -10,7 +10,7 @@
 struct Preprocessor2;
 
 
-typedef kvec_t(Token) MacroArgBody;
+typedef internedmap_t(TokenArray) MacroCallArgMap;
 
 typedef struct {
   kvec_t(interned_str) argnames;
@@ -18,6 +18,7 @@ typedef struct {
   interned_str name;
 } MacroDef;
 
+void free_macro_def(MacroDef* def);
 void macro_def(struct Preprocessor2* pp2);
 void macro_use(struct Preprocessor2* pp2, Token* token);
 

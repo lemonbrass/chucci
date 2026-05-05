@@ -39,8 +39,7 @@ void free_ctx(CompilerCtx* ctx) {
   free_interntable(&ctx->table);
 }
 
-void initiate_error(CompilerCtx* ctx, const char* msg) {
-  printf("Error: %s\n", msg);
+void initiate_error(CompilerCtx* ctx) {
   longjmp(*ctx->onerror, 1);
 }
 

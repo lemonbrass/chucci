@@ -23,6 +23,6 @@ typedef struct {
 
 CompilerCtx new_ctx(CompilerOpt* options, string source, jmp_buf* onerror);
 void free_ctx(CompilerCtx* ctx);
-void initiate_error(CompilerCtx* ctx, const char* msg);
+void initiate_error(CompilerCtx* ctx);
 
 #endif
