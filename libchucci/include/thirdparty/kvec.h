@@ -87,8 +87,15 @@ int main() {
 						  : (v).n <= (size_t)(i)? (v).n = (i) + 1 \
 						  : 0), (v).a[(i)])
 
-// modification: added kv_top
+// modification: added kv_top & kv_push_vec & kv_foreach
 
 #define kv_top(v) kv_A((v), kv_size(v)-1)
+#define kv_push_vec(T, dest, src) do {\
+  for (size_t i=0; i<kv_size(src); i++) { \
+    kv_push(T, dest, kv_A(src, i)); \
+  }} while (0)
+#define kv_foreach(T, vec, i, child) \
+  for (size_t i = 0; i < kv_size(vec); i++) \
+    for (T child = kv_A(vec, i), *_once = (void*)1; _once; _once = NULL)
 
 #endif
