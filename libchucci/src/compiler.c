@@ -1,3 +1,5 @@
+#include <memscope.h>
+#include <preprocess_1.h>
 #include <da_internmap.h>
 #include <lexer.h>
 #include <pp2_macro.h>
@@ -21,6 +23,7 @@ ChucciCompiler new_compiler(CompilerOpt* opt, string source, jmp_buf* onerror) {
   kv_push(string, ctx.source_stack, source);
   ctx.onerror = onerror;
   kv_init(ctx.included_files);
+  kv_init(ctx.memstack);
   kv_init(ctx.macro_stack);
   #define X(a, b) ctx.keywords[a] = intern(ctx.table, sv_from_cstr(b));
   KEYWORDS(X)
@@ -54,12 +57,34 @@ void free_opt(CompilerOpt** opt) {
   *opt = NULL;
 }
 
-TokenArray compiler_preprocess(ChucciCompiler* compiler) {
+void compiler_preprocess1(ChucciCompiler* compiler) {
+  Preprocessor1 pp1 = new_pp1(compiler);
+  string pp1_source = resolve_pp1(&pp1);
+  free_str(&kv_top(compiler->source_stack));
+  kv_top(compiler->source_stack) = pp1_source;
+  // free the not needed memory
+  for (size_t i = 0; i < kv_size(compiler->included_files); i++) {
+    free_path(&kv_A(compiler->included_files, i));
+  }
+  kv_destroy(compiler->included_files);
+  free_ds(&compiler->buf);
+}
+
+TokenArray compiler_lex_and_pp2(ChucciCompiler* compiler) {
   Lexer lexer = new_lexer(compiler);
   TokenSource src = ts_from_lexer(&lexer);
   Preprocessor2 pp2 = new_pp2(compiler, &src);
   TokenArray result = resolve_pp2(&pp2);
+  // free the not needed memory
+  kv_destroy(compiler->macro_stack);
+  imap_destroy(compiler->macros, free_macro_def);
   return result;
+}
+
+TokenArray compiler_compile(ChucciCompiler* compiler) {
+  compiler_preprocess1(compiler);
+  return compiler_lex_and_pp2(compiler);
+  // TODO: parsing, IR, codegen
 }
 
 void initiate_error(ChucciCompiler* ctx) {
@@ -67,17 +92,22 @@ void initiate_error(ChucciCompiler* ctx) {
 }
 
 void free_compiler(ChucciCompiler* ctx) {
-  for (size_t i = 0; i < kv_size(ctx->included_files); i++) {
-    free_path(&kv_A(ctx->included_files, i));
-  }
   for (size_t i = 0; i < kv_size(ctx->source_stack); i++) {
     free_str(&kv_A(ctx->source_stack, i));
   }
-  kv_destroy(ctx->included_files);
+  for (size_t i = 0; i < kv_size(ctx->memstack); i++) {
+    free_scope(&kv_A(ctx->memstack, i));
+  }
+  kv_destroy(ctx->memstack);
   kv_destroy(ctx->source_stack);
-  kv_destroy(ctx->macro_stack);
-  imap_destroy(ctx->macros, free_macro_def);
-  free_ds(&ctx->buf);
   free_interntable(&ctx->table);
   free_opt(&ctx->options);
+}
+
+void push_memscope(ChucciCompiler* ctx, MemScope* scope) {
+  kv_push(MemScope*, ctx->memstack, scope);
+}
+
+void pop_memscope(ChucciCompiler* ctx) {
+  free_scope(&kv_pop(ctx->memstack));
 }

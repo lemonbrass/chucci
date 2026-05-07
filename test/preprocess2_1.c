@@ -22,7 +22,7 @@ void preprocess2_1(jmp_buf errbuf) {
   ChucciCompiler compiler = new_compiler(opt, source, &onerror);
 
   if (setjmp(onerror) == 0) {
-    TokenArray result = compiler_preprocess(&compiler);
+    TokenArray result = compiler_compile(&compiler);
     
     print_token_array(&result);
 

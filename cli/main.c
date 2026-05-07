@@ -25,7 +25,7 @@ int main() {
       add_source(&ctx, source);
       if (s_eq(source, sv_from_cstr("exit"))) break;
 
-      TokenArray result = compiler_preprocess(&ctx);
+      TokenArray result = compiler_compile(&ctx);
       print_token_array(&result);
       kv_destroy(result);
       reset_ds(&dsinput);
