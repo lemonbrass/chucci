@@ -30,6 +30,19 @@
 #include <preprocess_2.h>
 #include <lexer.h>
 
+void print_macro_def(MacroDef* def) {
+  printf("%.*s", def->name.len, def->name.cstr);
+  if (def->is_functionlike) {
+    printf("(");
+    kv_foreach(interned_str, def->argnames, i, arg) {
+      printf("%.*s", arg.len, arg.cstr);
+      if (i != def->argnames.n-1) printf(", ");
+    }
+    printf(")\n");
+  }
+  print_token_array(&def->body);
+}
+
 bool are_tokens_adjacent(Token t1, Token t2) {
   return (t1.pos.line == t2.pos.line && t1.pos.id + get_token_len(t1) == t2.pos.id);
 }
@@ -52,8 +65,10 @@ void macro_def(Preprocessor2* pp2) {
       token = next_token(pp2->token_source);
       if (token.kind == TOK_IDENT)
         kv_push(interned_str, def.argnames, token.ident);
-      else if (token.kind == SEP_RPAREN)
+      else if (token.kind == SEP_RPAREN) {
+        token = next_token(pp2->token_source);
         break;
+      }
       else throw_error(pp2->token_source, token, "Unexpected token in macro definition", pp2->ctx);
 
       token = next_token(pp2->token_source);
@@ -71,6 +86,7 @@ void macro_def(Preprocessor2* pp2) {
     kv_push(Token, def.body, token);
     token = next_token(pp2->token_source);
   }
+  // print_macro_def(&def);
   imap_set(def, pp2->ctx->macros, def.name);
 }
 
@@ -106,12 +122,12 @@ void parse_functionlikemacro_call_args(Preprocessor2* pp2, MacroCallArgMap* args
       depth++;
       kv_push(Token, arg, token);
     }
+    if (kv_size(def->argnames) == 0 && arg_num == 0 && token.kind == SEP_RPAREN && depth == 1) {
+      // token = next_token(pp2->token_source);
+      break;
+    }
     else if ((token.kind == SEP_COMMA || token.kind == SEP_RPAREN) && depth==1) {
-      if (kv_size(def->argnames) && arg_num == 0 && token.kind == SEP_RPAREN) {
-        token = next_token(pp2->token_source);
-        break;
-      }
-      if(arg_num >= kv_size(def->argnames)) {
+      if(arg_num > kv_size(def->argnames)) {
         throw_error(pp2->token_source, token, "Too many arguments in macro call.", pp2->ctx);
       }
       
@@ -149,6 +165,7 @@ bool is_ident_macro_arg(interned_str ident, MacroDef* def) {
 
 
 void expand_functionlike_macro_body(Preprocessor2* pp2, MacroDef* def, MacroCallArgMap* args, TokenArray* expanded) {
+  // expect_token_kind(pp2->token_source, SEP_RPAREN, pp2->ctx);
   for (size_t i=0; i<kv_size(def->body); i++) {
     Token token = kv_A(def->body, i);
     // If the body has a reference to an argumentname, replace argumentname with argumentbody

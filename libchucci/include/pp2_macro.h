@@ -22,5 +22,6 @@ typedef struct MacroDef{
 void free_macro_def(MacroDef* def);
 void macro_def(struct Preprocessor2* pp2);
 void macro_use(struct Preprocessor2* pp2, Token* token);
+void print_macro_def(MacroDef* def);
 
 #endif
