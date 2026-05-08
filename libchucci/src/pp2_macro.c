@@ -1,26 +1,21 @@
 /*
-  This is a component of preprocessor that handles macros.
-  If we find #define (in preprocess2.c:step_pp2) => macro_def is called
-  macro_def: adds macro definition to pp2->macros (interned_map which maps macro name identifier to MacroDef)
-
-  If we find an identifier which is in pp2->macros, we run macro_use.
-  macro_use:
-  checks for cyclic defines, if found, continue without expanding.
-  otherwise either run functionlike_macro_use OR objectlike_macro_use
-
-  objectlike_macro_use: it replaces the macro name with the macro body, after a recursive expansion
-  of macro body.
-
-  function_like_macro_use:
-  it first parses the argument list and recursively expands each argument (in parse_functionlikemacro_call_args).
-  then it substitutes all arguments in body (using another interned_map: MacroCallArgMap) in expand_functionlike_macro_body
-  then we recursively expand the substituted macro body and free the MacroCallArgMap.
-
+  This is a component of preprocessor2 which handles macros.
+  macro_def -> define a macro
+  mscro_use -> use a macro
+  mwcro_use first checks for cyclic macros
+  and then either runs macro_use_fnlike or macro_use_objlike
+  based on what MacroDef.is_functionlike is.
+  mafro_use_objlike -> simply expands the macro body recursively
+  until no macros remain and then appends it to stream.
+  macro_use_fnlike -> first creates a ArgName (interned_str) -> Arg (TokenArray) mapping.
+  Then it expands the macro body after replacing all ArgName references
+  with their values acc. to the mapping.
+  Lastly it recursively checks for more macros before the result is pushed into the stream.
   NOTE: This preprocessor ISNT standard compliant, its a superset of a subset, so we will have better macros too, later,
    but these macros are just here as a challenge
 */
-#include "compiler.h"
-#include "memscope.h"
+#include <compiler.h>
+#include <memscope.h>
 #include <da_string.h>
 #include <stddef.h>
 #include <token_source.h>
