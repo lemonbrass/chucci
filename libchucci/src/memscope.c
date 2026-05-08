@@ -12,7 +12,7 @@ MemScope* new_scope() {
   return scope;
 }
 
-inline MemEntry new_mem_entry(void* ptr, MemDestructorFn fn) {
+MemEntry new_mem_entry(void* ptr, MemDestructorFn fn) {
   return (MemEntry){ .destructor=fn, .ptr=ptr };
 }
 
@@ -34,7 +34,8 @@ void untrack_mem(MemScope* scope, void* ptr) {
 void free_scope(MemScope** scope) {
   while (kv_size(**scope) > 0) {
     MemEntry entry = kv_pop(**scope);
-    entry.destructor(entry.ptr);
+    if (entry.destructor)
+      entry.destructor(entry.ptr);
   }
   kv_destroy(**scope);
   free(*scope);

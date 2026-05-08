@@ -29,6 +29,7 @@ typedef struct {
   interned_str keywords[__token_kind_count];
   interned_str preprocessor_cmds[__preprocessor_cmd_len];
   da_string buf; // for internal memory reuse
+  TokenArray token_buf;
   internedmap_t(struct MacroDef) macros;
   jmp_buf* onerror;
 } ChucciCompiler;

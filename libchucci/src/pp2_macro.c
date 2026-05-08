@@ -19,7 +19,10 @@
   NOTE: This preprocessor ISNT standard compliant, its a superset of a subset, so we will have better macros too, later,
    but these macros are just here as a challenge
 */
+#include "compiler.h"
+#include "memscope.h"
 #include <da_string.h>
+#include <stddef.h>
 #include <token_source.h>
 #include <assert.h>
 #include <da_internmap.h>
@@ -31,7 +34,7 @@
 #include <lexer.h>
 
 void print_macro_def(MacroDef* def) {
-  printf("%.*s", def->name.len, def->name.cstr);
+  printf("%.*s: ", def->name.len, def->name.cstr);
   if (def->is_functionlike) {
     printf("(");
     kv_foreach(interned_str, def->argnames, i, arg) {
@@ -44,189 +47,208 @@ void print_macro_def(MacroDef* def) {
 }
 
 bool are_tokens_adjacent(Token t1, Token t2) {
+  // return true;
   return (t1.pos.line == t2.pos.line && t1.pos.id + get_token_len(t1) == t2.pos.id);
 }
 
+void free_token_array(TokenArray* arr) {
+  if (arr && arr->a)
+    kv_destroy(*arr);
+}
+
+void free_macro_call_arg_map(MacroCallArgMap* args) {
+  imap_destroy(*args, free_token_array);
+}
+
+void macro_def_parse_args(Preprocessor2* pp2, MacroDef* def) {
+  def->is_functionlike = true;
+  expect_token_kind(pp2->token_source, SEP_LPAREN, pp2->ctx);
+  Token token = next_token(pp2->token_source);
+  while (true) {
+    if (token.kind == SEP_RPAREN) break; 
+    else if (token.kind == TOK_IDENT)
+      kv_push(interned_str, def->argnames, token.ident);
+    else
+      throw_error(pp2->token_source, token, "Unexpected token in macro definition", pp2->ctx);
+    
+    token = next_token(pp2->token_source);
+    
+    if (token.kind == SEP_COMMA) {
+      token = next_token(pp2->token_source);
+      if (token.kind == SEP_RPAREN) 
+        throw_error(pp2->token_source, token, "Unexpected token in macro definition", pp2->ctx);
+    }
+    else if (token.kind == SEP_RPAREN)
+      break;
+    else
+      throw_error(pp2->token_source, token, "Unexpected token in macro definition", pp2->ctx);
+  }
+}
+
+void macro_def_parse_body(Preprocessor2* pp2, MacroDef* def) {
+  Token token = next_token(pp2->token_source);
+  while (token.kind != TOK_EOF && token.kind != SEP_NEWLINE) {
+    kv_push(Token, def->body, token);
+    token = next_token(pp2->token_source);
+  }
+}
+
 void macro_def(Preprocessor2* pp2) {
+  MemScope* scope = new_scope();
+  push_memscope(pp2->ctx, scope);
   MacroDef def = {0};
+  track_mem(scope, &def, (void*)free_macro_def);
+  
   Token name = expect_token_kind(pp2->token_source, TOK_IDENT, pp2->ctx);
   def.name = name.ident;
-  Token token = next_token(pp2->token_source); // either LPAREN (functionlike macro) or smth else (objectlike macro)
-  def.is_functionlike = false;
+  Token token = peek_token(pp2->token_source);
 
-  /*
-    RULE: #define Foo(x) fn(x) => FNLIKE
-    BUT   #define Foo (x) fn(x) => OBJECTLIKE (because of that space in between Foo and (x)) => expands to (x) fn(x)
-  */
-  // If it is function like macro, parse (argument list)
-  if (token.kind == SEP_LPAREN && are_tokens_adjacent(name, token)) {
-    def.is_functionlike = true;
-    while (true) {
-      token = next_token(pp2->token_source);
-      if (token.kind == TOK_IDENT)
-        kv_push(interned_str, def.argnames, token.ident);
-      else if (token.kind == SEP_RPAREN) {
-        token = next_token(pp2->token_source);
-        break;
-      }
-      else throw_error(pp2->token_source, token, "Unexpected token in macro definition", pp2->ctx);
+  if (token.kind == SEP_LPAREN && are_tokens_adjacent(name, token))
+    macro_def_parse_args(pp2, &def);
+  macro_def_parse_body(pp2, &def);
 
-      token = next_token(pp2->token_source);
-      if (token.kind == SEP_COMMA) continue;
-      else if (token.kind == SEP_RPAREN) {
-        token = next_token(pp2->token_source);
-        break;
-      }
-      else throw_error(pp2->token_source, token, "Unexpected token in macro definition", pp2->ctx);
-    }
-  }
+  print_macro_def(&def);
 
-  // Parse body, for both function-like & object-like macros
-  while (token.kind != TOK_EOF && token.kind != SEP_NEWLINE) {
-    kv_push(Token, def.body, token);
-    token = next_token(pp2->token_source);
-  }
-  // print_macro_def(&def);
-  imap_set(def, pp2->ctx->macros, def.name);
+  imap_set(def, pp2->ctx->macros, name.ident);
+  untrack_mem(scope, &def);
+  pop_memscope(pp2->ctx);
 }
 
-
-void objectlike_macro_use(Preprocessor2* pp2, MacroDef* def) {
-  // Cyclicity prevention
-  kv_push(interned_str, pp2->ctx->macro_stack, def->name);
-  // recursively expand
-  TokenSource src = ts_from_array(def->body, str_to_sv(kv_top(pp2->ctx->source_stack)));
-  TokenArray result = recursively_expand(pp2, &src);
-  kv_push_vec(Token, pp2->stream, result);
-
-  kv_pop(pp2->ctx->macro_stack);
-  kv_destroy(result);
-}
-
-void destroy_macro_call_arg(TokenArray* arg) {
-  kv_destroy(*arg);
-}
-
-
-void parse_functionlikemacro_call_args(Preprocessor2* pp2, MacroCallArgMap* args, MacroDef* def) {
-  TokenArray arg = {0};
-  imap_init(*args);
-  Token token = expect_token_kind(pp2->token_source, SEP_LPAREN, pp2->ctx);
-  size_t arg_num = 0;
-  size_t depth = 1;
-  
-  token = next_token(pp2->token_source);
+void fnlike_args_match_paren(Preprocessor2* pp2, TokenArray* arg) {
+  Token token = next_token(pp2->token_source);
   while (true) {
-    if (token.kind == TOK_EOF) throw_error(pp2->token_source, token, "Unexpected EOF during macro call.", pp2->ctx);
-    else if (token.kind == SEP_LPAREN) {
-      depth++;
-      kv_push(Token, arg, token);
+    if (token.kind == SEP_LPAREN) {
+      kv_push(Token, *arg, token);
+      fnlike_args_match_paren(pp2, arg);
     }
-    if (kv_size(def->argnames) == 0 && arg_num == 0 && token.kind == SEP_RPAREN && depth == 1) {
-      // token = next_token(pp2->token_source);
+    else if (token.kind == SEP_RPAREN) {
+      kv_push(Token, *arg, token);
       break;
     }
-    else if ((token.kind == SEP_COMMA || token.kind == SEP_RPAREN) && depth==1) {
-      if(arg_num > kv_size(def->argnames)) {
-        throw_error(pp2->token_source, token, "Too many arguments in macro call.", pp2->ctx);
-      }
-      
-      // Before inserting arg into the map, expand arguments recursively
-      TokenSource src = ts_from_array(arg, str_to_sv(kv_top(pp2->ctx->source_stack)));
-      TokenArray result = recursively_expand(pp2, &src);
-      interned_str argname = kv_A(def->argnames, arg_num); 
-
-      imap_set(result, *args, argname);
-      arg_num++;
-
-      kv_destroy(arg);
-      arg = (TokenArray){0}; // reset arg
-    }
-    else {
-      kv_push(Token, arg, token);
-    }
-    if (token.kind == SEP_RPAREN && --depth==0) {
-      if (arg_num != kv_size(def->argnames)) {
-        imap_destroy(*args, destroy_macro_call_arg);
-        throw_error(pp2->token_source, token, "Insufficient amount of arguments in macro call", pp2->ctx);
-      }
-      break;
-    }
+    else kv_push(Token, *arg, token);
     token = next_token(pp2->token_source);
   }
 }
 
-bool is_ident_macro_arg(interned_str ident, MacroDef* def) {
-  kv_foreach(interned_str, def->argnames, i, arg) {
-    if (interned_eq(arg, ident)) return true;
-  }
-  return false;
+void push_fnlike_arg(Preprocessor2* pp2, TokenArray* arg, MacroCallArgMap* args, interned_str argname) {
+  TokenSource src = ts_from_array(*arg, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenArray result = recursively_expand(pp2, &src);
+  imap_set(result, *args, argname);
+
+  kv_destroy(*arg);
+  *arg = (TokenArray){0};
 }
 
+void macro_use_fnlike_args(Preprocessor2* pp2, MacroDef* def, MacroCallArgMap* args) {
+  MemScope* scope = new_scope();
+  push_memscope(pp2->ctx, scope);
+  
+  expect_token_kind(pp2->token_source, SEP_LPAREN, pp2->ctx);
 
-void expand_functionlike_macro_body(Preprocessor2* pp2, MacroDef* def, MacroCallArgMap* args, TokenArray* expanded) {
-  // expect_token_kind(pp2->token_source, SEP_RPAREN, pp2->ctx);
-  for (size_t i=0; i<kv_size(def->body); i++) {
-    Token token = kv_A(def->body, i);
-    // If the body has a reference to an argumentname, replace argumentname with argumentbody
-    if (token.kind == TOK_IDENT && is_ident_macro_arg(token.ident, def)) {
-      TokenArray* arg = imap_get(*args, token.ident);
-      kv_foreach(Token, *arg, _, token) {
-        if (token.kind == TOK_EOF) break;
-        kv_push(Token, *expanded, token);
-      }
+  TokenArray arg = {0};
+  track_mem(scope, &arg, (void*)free_token_array);
+
+  size_t argnum = 0;
+
+  Token token = next_token(pp2->token_source);
+  while (true) {
+    if (token.kind == SEP_LPAREN) {
+      kv_push(Token, arg, token);
+      fnlike_args_match_paren(pp2, &arg);
     }
-    // else just push
+    else if (token.kind == SEP_COMMA) {
+      // >= instesd of > because we want argnum + 1 <= no of args
+      if (argnum >= kv_size(def->argnames)) throw_error(pp2->token_source, token, "Excess argumments passed to fnlike macro", pp2->ctx);
+      if (arg.n > 0)
+        push_fnlike_arg(pp2, &arg, args, kv_A(def->argnames, argnum++));
+    }
+    else if (token.kind == SEP_RPAREN) {
+      if (arg.n > 0)
+        push_fnlike_arg(pp2, &arg, args, kv_A(def->argnames, argnum++));
+      if (argnum != kv_size(def->argnames)) throw_error(pp2->token_source, token, "Number of passed and needed arguments dont match in fnlike macro", pp2->ctx);
+      break;
+    }
+    else if (token.kind == TOK_EOF) throw_error(pp2->token_source, token, "Unexpected EOF", pp2->ctx);
+    else kv_push(Token, arg, token);
+    token = next_token(pp2->token_source);
+  }
+  pop_memscope(pp2->ctx);
+}
+
+void check_and_substitute_arg(MacroCallArgMap* args, MacroDef* def, TokenArray* expanded, Token token) {
+  assert(token.kind == TOK_IDENT);
+  kv_foreach(interned_str, def->argnames, i, argname) {
+    if (interned_eq(token.ident, argname)) {
+      kv_push_vec(Token, *expanded, *imap_get(*args, argname));
+      return;
+    }
+  }
+  kv_push(Token, *expanded, token);
+}
+
+void macro_use_fnlike_body(Preprocessor2* pp2, MacroCallArgMap* args, TokenArray* expanded, MacroDef* def) {
+  kv_foreach(Token, def->body, i, token) {
+    if (token.kind == TOK_IDENT) check_and_substitute_arg(args, def, expanded, token);
     else kv_push(Token, *expanded, token);
   }
 }
 
-void functionlike_macro_use(Preprocessor2* pp2, MacroDef* def) {
-  // Parse arguments
+void macro_use_fnlike(Preprocessor2* pp2, MacroDef* def) {
+  MemScope* scope = new_scope();
+  push_memscope(pp2->ctx, scope);
+
   MacroCallArgMap args;
-  parse_functionlikemacro_call_args(pp2, &args, def);
+  track_mem(scope, &args, (void*)free_macro_call_arg_map);
+  imap_init(args);
 
-  // Cyclicity prevention
+  pp2->ctx->token_buf.n = 0;
+
+  macro_use_fnlike_args(pp2, def, &args);
+
+  // Cyclic macro check
   kv_push(interned_str, pp2->ctx->macro_stack, def->name);
+  macro_use_fnlike_body(pp2, &args, &pp2->ctx->token_buf, def);
 
-  // Expand body
-  TokenArray expanded = {0};
-  expand_functionlike_macro_body(pp2, def, &args, &expanded);
-
-  // Recursively check expanded body for macro use
-  TokenSource src = ts_from_array(expanded, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenSource src = ts_from_array(pp2->ctx->token_buf, str_to_sv(kv_top(pp2->ctx->source_stack)));
   TokenArray result = recursively_expand(pp2, &src);
-
-  // Push result to preprocessor stream
-  kv_push_vec(Token, pp2->stream, result);
-
   kv_pop(pp2->ctx->macro_stack);
+  track_mem(scope, &result, (void*)free_token_array);
 
-  imap_destroy(args, destroy_macro_call_arg);
-  kv_destroy(expanded);
-  kv_destroy(result);
+  kv_push_vec(Token, pp2->stream, result);
+  
+  pp2->ctx->token_buf.n = 0;
+  pop_memscope(pp2->ctx);
 }
 
-bool check_cyclic_macro(Preprocessor2* pp2, interned_str name) {
-  for (size_t i=0; i<kv_size(pp2->ctx->macro_stack); i++)
-    if (interned_eq(kv_A(pp2->ctx->macro_stack, i), name)) return true;
+void macro_use_objlike(Preprocessor2* pp2, MacroDef* def) {
+  kv_push(interned_str, pp2->ctx->macro_stack, def->name);
+  TokenSource src = ts_from_array(def->body, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenArray result = recursively_expand(pp2, &src);
+  kv_pop(pp2->ctx->macro_stack);
+
+  kv_push_vec(Token, pp2->stream, result);
+  free_token_array(&result);
+}
+
+bool check_cyclic_macros(Preprocessor2* pp2, interned_str name) {
+  kv_foreach(interned_str, pp2->ctx->macro_stack, i, macro) {
+    if (interned_eq(macro, name)) return true;
+  }
   return false;
 }
 
-void macro_use(Preprocessor2* pp2, Token* usage_tok) {
-  MacroDef* def = imap_get(pp2->ctx->macros, usage_tok->ident);
+void macro_use(Preprocessor2* pp2, Token* token) {
+  MacroDef* def = imap_get(pp2->ctx->macros, token->ident);
   if (!def) return;
-  // Object-like macros
-  if (check_cyclic_macro(pp2, def->name)) {
-    kv_push(Token, pp2->stream, *usage_tok);
+  if (check_cyclic_macros(pp2, token->ident)) {
+    kv_push(Token, pp2->stream, *token);
     return;
   }
-  Token peeked = peek_token(pp2->token_source);
-  if (!def->is_functionlike)
-    objectlike_macro_use(pp2, def);
-  // Function-like
-  else if (peeked.kind == SEP_LPAREN) functionlike_macro_use(pp2, def);
-  else kv_push(Token, pp2->stream, *usage_tok);
+
+  if (def->is_functionlike)
+    macro_use_fnlike(pp2, def);
+  else
+    macro_use_objlike(pp2, def);
 }
 
 void free_macro_def(MacroDef *def) {

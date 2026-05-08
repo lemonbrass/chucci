@@ -62,12 +62,6 @@ void compiler_preprocess1(ChucciCompiler* compiler) {
   string pp1_source = resolve_pp1(&pp1);
   free_str(&kv_top(compiler->source_stack));
   kv_top(compiler->source_stack) = pp1_source;
-  // free the not needed memory
-  for (size_t i = 0; i < kv_size(compiler->included_files); i++) {
-    free_path(&kv_A(compiler->included_files, i));
-  }
-  kv_destroy(compiler->included_files);
-  free_ds(&compiler->buf);
 }
 
 TokenArray compiler_lex_and_pp2(ChucciCompiler* compiler) {
@@ -75,9 +69,6 @@ TokenArray compiler_lex_and_pp2(ChucciCompiler* compiler) {
   TokenSource src = ts_from_lexer(&lexer);
   Preprocessor2 pp2 = new_pp2(compiler, &src);
   TokenArray result = resolve_pp2(&pp2);
-  // free the not needed memory
-  kv_destroy(compiler->macro_stack);
-  imap_destroy(compiler->macros, free_macro_def);
   return result;
 }
 
@@ -88,6 +79,11 @@ TokenArray compiler_compile(ChucciCompiler* compiler) {
 }
 
 void initiate_error(ChucciCompiler* ctx) {
+  for (size_t i = 0; i < kv_size(ctx->memstack); i++) {
+    free_scope(&kv_A(ctx->memstack, i));
+  }
+  kv_destroy(ctx->memstack);
+  ctx->memstack.a = NULL;
   longjmp(*ctx->onerror, 1);
 }
 
@@ -95,13 +91,22 @@ void free_compiler(ChucciCompiler* ctx) {
   for (size_t i = 0; i < kv_size(ctx->source_stack); i++) {
     free_str(&kv_A(ctx->source_stack, i));
   }
-  for (size_t i = 0; i < kv_size(ctx->memstack); i++) {
-    free_scope(&kv_A(ctx->memstack, i));
+  if (ctx->memstack.a) {
+    for (size_t i = 0; i < kv_size(ctx->memstack); i++) {
+      free_scope(&kv_A(ctx->memstack, i));
+    }
+    kv_destroy(ctx->memstack);
   }
-  kv_destroy(ctx->memstack);
+  for (size_t i = 0; i < kv_size(ctx->included_files); i++) {
+    free_path(&kv_A(ctx->included_files, i));
+  }
+  kv_destroy(ctx->included_files);
+  free_ds(&ctx->buf);
   kv_destroy(ctx->source_stack);
   free_interntable(&ctx->table);
   free_opt(&ctx->options);
+  imap_destroy(ctx->macros, free_macro_def);
+  kv_destroy(ctx->macro_stack);
 }
 
 void push_memscope(ChucciCompiler* ctx, MemScope* scope) {

@@ -62,7 +62,7 @@ int main() {
 #define kv_max(v) ((v).m)
 
 #define kv_resize(type, v, s)  ((v).m = (s), (v).a = (type*)realloc((v).a, sizeof(type) * (v).m))
-
+#define kv_reset(v) ((v).n=0)
 #define kv_copy(type, v1, v0) do {							\
 		if ((v1).m < (v0).n) kv_resize(type, v1, (v0).n);	\
 		(v1).n = (v0).n;									\
@@ -93,7 +93,7 @@ int main() {
 #define kv_top(v) kv_A((v), kv_size(v)-1)
 #define kv_push_vec(T, dest, src) do {\
   for (size_t i=0; i<kv_size(src); i++) { \
-    kv_push(T, dest, kv_A(src, i)); \
+    kv_push(T, dest, kv_A((src), i)); \
   }} while (0)
 #define kv_foreach(T, vec, i, child) \
   for (size_t i = 0; i < kv_size(vec); i++) \
