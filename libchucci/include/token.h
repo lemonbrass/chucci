@@ -1,6 +1,7 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
+#include "da_arena.h"
 #include <assert.h>
 #include <da_string.h>
 #include <cursor.h>
@@ -28,6 +29,7 @@ extern bool is_op_table[256];
     X(OP_OR, "||", '|') \
     X(OP_SHL, "<<", '<') \
     X(OP_SHR, ">>", '>') \
+    X(OP_TOKEN_PASTE, "##", '#') \
     X(OP_ADD_EQ, "+=", '+') \
     X(OP_SUB_EQ, "-=", '-') \
     X(OP_MUL_EQ, "*=", '*') \
@@ -163,4 +165,6 @@ Token new_tok_simple(Cursor pos, TokenKind keyword);
 void print_token(Token* token);
 void print_token_pretty(Token* token);
 size_t get_token_len(Token token);
+string_view token_to_str(Token* token);
+string_view token_array_to_str(arena_t* arena, TokenArray* token);
 #endif

@@ -1,6 +1,7 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
+#include "da_arena.h"
 #include <memscope.h>
 #include <da_internmap.h>
 #include <da_string.h>
@@ -30,6 +31,7 @@ typedef struct {
   interned_str preprocessor_cmds[__preprocessor_cmd_len];
   da_string buf; // for internal memory reuse
   TokenArray token_buf;
+  arena_t* arena;
   internedmap_t(struct MacroDef) macros;
   jmp_buf* onerror;
 } ChucciCompiler;

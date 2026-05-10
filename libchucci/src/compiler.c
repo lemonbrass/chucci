@@ -1,3 +1,4 @@
+#include "da_arena.h"
 #include <memscope.h>
 #include <preprocess_1.h>
 #include <da_internmap.h>
@@ -22,6 +23,7 @@ ChucciCompiler new_compiler(CompilerOpt* opt, string source, jmp_buf* onerror) {
   ctx.table = new_interntable();
   kv_push(string, ctx.source_stack, source);
   ctx.onerror = onerror;
+  ctx.arena = new_arena(1024, ARENA_RELIABLE_MARK);
   kv_init(ctx.included_files);
   kv_init(ctx.memstack);
   kv_init(ctx.macro_stack);
@@ -100,9 +102,11 @@ void free_compiler(ChucciCompiler* ctx) {
   for (size_t i = 0; i < kv_size(ctx->included_files); i++) {
     free_path(&kv_A(ctx->included_files, i));
   }
+  arena_free(ctx->arena);
   kv_destroy(ctx->included_files);
   free_ds(&ctx->buf);
   kv_destroy(ctx->source_stack);
+  kv_destroy(ctx->token_buf);
   free_interntable(&ctx->table);
   free_opt(&ctx->options);
   imap_destroy(ctx->macros, free_macro_def);

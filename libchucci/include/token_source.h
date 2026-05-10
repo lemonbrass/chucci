@@ -34,5 +34,6 @@ Token expect_token_kind(TokenSource* src, TokenKind kind, ChucciCompiler* ctx);
 
 void print_token_array(TokenArray* array);
 void throw_error(TokenSource* src, Token errtok, const char* errmsg, ChucciCompiler* ctx);
+void give_warning(TokenSource* src, Token warningtok, const char* warningmsg, ChucciCompiler* ctx);
 
 #endif

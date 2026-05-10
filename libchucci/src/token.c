@@ -1,6 +1,10 @@
+#include "da_arena.h"
+#include "da_intern.h"
+#include "thirdparty/kvec.h"
 #include <da_string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <token.h>
 
 const char* tok_to_str[__token_kind_count] = {
@@ -30,6 +34,29 @@ size_t get_token_len(Token token) {
   else return 0;
 }
 
+string_view token_to_str(Token* token) {
+  if (token->kind < TOK_EOF) return sv_from_cstr(tok_to_str[token->kind]);
+  else if (token->kind == TOK_VAL) return token->val;
+  else if (token->kind == TOK_IDENT) return interned_to_sv(token->ident);
+  else if (token->kind == SEP_NEWLINE) return sv_from_cstr("\n");
+  else assert(false);
+}
+
+string_view token_array_to_str(arena_t* arena, TokenArray* tokens) {
+  arena_mark_t mark = arena_mark(arena);
+  size_t i = 0;
+  size_t len = 0;
+  char* base = arena_alloc(arena, 0);
+  for (Token token = kv_A(*tokens, i++); i < kv_size(*tokens); ) {
+    string_view sv = token_to_str(&token);
+    arena_alloc(arena, sv.len);
+    arena_mark_t mark2 = arena_mark(arena);
+    assert(mark.chunkid == mark2.chunkid);
+    memcpy(base + len, sv.cstr, sv.len);
+    len += sv.len;
+  }
+  return new_sv(base, len);
+}
 
 Token new_tok_ident(Cursor pos, interned_str name) {
   Token token;

@@ -26,6 +26,7 @@ TokenSource ts_from_array(TokenArray array, string_view source) {
 Token next_token(TokenSource* src) {
   switch (src->kind) {
     case SK_ARRAY:
+      if (src->array.tokens.n == 0) return EOF_TOKEN(new_cursor(src->array.source));
       if (src->array.pos >= src->array.tokens.n) return EOF_TOKEN(kv_top(src->array.tokens).pos);
       return kv_A(src->array.tokens, src->array.pos++);
     case SK_LEXER:
@@ -72,4 +73,11 @@ void throw_error(TokenSource* src, Token errtok, const char* errormsg, ChucciCom
   printf("\n");
   dump_cursor(&errtok.pos);
   initiate_error(ctx);
+}
+
+void give_warning(TokenSource* src, Token warningtok, const char* warningmsg, ChucciCompiler* ctx) {
+  printf("Warning: %s: ", warningmsg);
+  print_token_pretty(&warningtok);
+  printf("\n");
+  dump_cursor(&warningtok.pos);
 }

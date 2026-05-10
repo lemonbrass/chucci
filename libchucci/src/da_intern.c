@@ -110,8 +110,34 @@ static InternEntry* intern_find_and_fill(InternTable* table, string_view str) {
   return entry;
 }
 
+static InternEntry* intern_find_and_fill_owned(InternTable* table, string str) {
+  if((float)table->len/(float)table->cap > INTERN_LOAD_FACTOR) resize_interntable(table);
+  hash_t h = hash_str(str.cstr, str.len, table->seed);
+  InternEntry* entry = intern_find_slot(table, h, str_to_sv(str));
+
+  if (entry->str.cstr == NULL) {
+    entry->str = str;
+    entry->h = h;
+    entry->id = table->len++;
+    memcpy((char*)entry->str.cstr, str.cstr, str.len);
+  }
+  return entry;
+}
+
 interned_str intern(InternTable* table, string_view str) {
   InternEntry* entry = intern_find_and_fill(table, str);
+  return str_to_interned(entry->str, entry->id);
+}
+
+interned_str concat_intern(InternTable* table, string_view str1, string_view str2) {
+  arena_mark_t mark = arena_mark(table->arena);
+  size_t len = str1.len + str2.len;
+  char* res = arena_alloc(table->arena, len);
+  memcpy(res, str1.cstr, str1.len);
+  memcpy(res + str1.len, str2.cstr, str2.len);
+  string res_str = new_str(res, len);
+  InternEntry* entry = intern_find_and_fill_owned(table, res_str);
+  if (entry->str.cstr != res) arena_mark_reset(&mark, table->arena);
   return str_to_interned(entry->str, entry->id);
 }
 

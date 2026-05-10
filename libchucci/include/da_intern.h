@@ -36,6 +36,7 @@ typedef struct {
 
 InternTable* new_interntable();
 interned_str intern(InternTable* table, string_view str);
+interned_str concat_intern(InternTable* table, string_view str1, string_view str2);
 
 string_view interned_to_sv(interned_str str);
 void free_interntable(InternTable** table);
