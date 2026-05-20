@@ -12,10 +12,19 @@
 void preprocess2_1(jmp_buf errbuf) {
   jmp_buf onerror;
   string source = str_from_cstr_copy(
-    "#define MY_CONST1 69\n"
-    "#define MY_CONST2 420\n"
-    "#define ADD(x, y) x + y\n"
-    "printf(\"%d + %d = %d \\n\", MY_CONST1, MY_CONST2, ADD(MY_CONST1, MY_CONST2));\n"
+    "#define add(x,y) (x + y)\n"
+    "#define str1(a) #a\n"
+    "#define str2(a) str1(a)\n"
+    "#define A(a, b, c) a##b = str2(c);\n"
+    "#define B(a, b, c) A(a, b, c) A(c, b, a)\n"
+    "#define X Y\n"
+    "#define Y X\n"
+    "X\n"
+    "Y\n"
+    "A(x, y, z)\n"
+    "B(x, y, z)\n"
+    "add(add(1, 2), 3)\n"
+    "str2(add(1, 2) * 1*2/7)\n"
   );
   assert(source.cstr);
   CompilerOpt* opt = new_opt();

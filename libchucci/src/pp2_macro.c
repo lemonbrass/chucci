@@ -14,10 +14,9 @@
   NOTE: This preprocessor ISNT standard compliant, its a superset of a subset, so we will have better macros too, later,
    but these macros are just here as a challenge
   NOTE: For my short term sanity, im restricting Token pasting to just identifiers, will add it later if i wanna get cracked
-  TODO: Stringification
 */
-#include "cursor.h"
-#include "da_arena.h"
+#include <cursor.h>
+#include <da_arena.h>
 #include <compiler.h>
 #include <memscope.h>
 #include <da_string.h>
@@ -108,8 +107,6 @@ void macro_def(Preprocessor2* pp2) {
   if (token.kind == SEP_LPAREN && are_tokens_adjacent(name, token))
     macro_def_parse_args(pp2, &def);
   macro_def_parse_body(pp2, &def);
-
-  print_macro_def(&def);
 
   imap_set(def, pp2->ctx->macros, name.ident);
   untrack_mem(scope, &def);
@@ -237,6 +234,7 @@ void stringify(Preprocessor2* pp2, MacroCallArgMap* args, MacroDef* def, TokenAr
     string str = new_str(arena_alloc(pp2->ctx->arena, buf->len), buf->len);
     memcpy((void*)str.cstr, get_cstr_from_ds(buf), buf->len);
     kv_push(Token, *expanded, new_token(argtok.pos, str_to_sv(str), str.len));
+    reset_ds(buf);
   }
   *i += 1;
 }
@@ -253,7 +251,7 @@ void macro_use_fnlike_body(Preprocessor2* pp2, MacroCallArgMap* args, TokenArray
   kv_foreach(Token, *expanded, i, token) {
     if (token.kind == TOK_IDENT && !check_and_join_tokens(pp2, args, expanded, &buf, &i, token))
       kv_push(Token, buf, token);
-    else
+    else if (token.kind != TOK_IDENT)
       kv_push(Token, buf, token);
   }
   kv_destroy(*expanded);
@@ -269,6 +267,7 @@ void macro_use_fnlike(Preprocessor2* pp2, MacroDef* def) {
   imap_init(args);
 
   TokenArray buf = {0};
+  track_mem(scope, &buf, (void*)free_token_array);
 
   macro_use_fnlike_args(pp2, def, &args);
 

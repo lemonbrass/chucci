@@ -29,6 +29,7 @@ typedef struct {
   kvec_t(string) source_stack;
   interned_str keywords[__token_kind_count];
   interned_str preprocessor_cmds[__preprocessor_cmd_len];
+  // TODO: Better buffer system
   da_string buf; // for internal memory reuse
   arena_t* arena;
   internedmap_t(struct MacroDef) macros;

@@ -35,7 +35,7 @@ void step_pp2(Preprocessor2* pp2, Token* tok) {
         break;
       }
     default:
-      kv_push(Token, pp2->stream, *tok);
+      if (tok->kind != SEP_NEWLINE) kv_push(Token, pp2->stream, *tok);
   }
   *tok = next_token(pp2->token_source);
 }
