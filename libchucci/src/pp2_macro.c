@@ -161,8 +161,7 @@ void macro_use_fnlike_args(Preprocessor2* pp2, MacroDef* def, MacroCallArgMap* a
     else if (token.kind == SEP_COMMA) {
       // >= instead of > because we want argnum + 1 <= no of args
       if (argnum >= kv_size(def->argnames)) throw_error(pp2->token_source, token, "Excess argumments passed to fnlike macro", pp2->ctx);
-      if (arg.n >= 0)
-        push_fnlike_arg(pp2, &arg, args, kv_A(def->argnames, argnum++));
+      push_fnlike_arg(pp2, &arg, args, kv_A(def->argnames, argnum++));
     }
     else if (token.kind == SEP_RPAREN) {
       if (argnum == 0 && kv_size(def->argnames) == 0) {
@@ -170,8 +169,7 @@ void macro_use_fnlike_args(Preprocessor2* pp2, MacroDef* def, MacroCallArgMap* a
         else throw_error(pp2->token_source, token, "Number of passed and needed arguments dont match", pp2->ctx);
       }
       else if (argnum + 1 != kv_size(def->argnames)) throw_error(pp2->token_source, token, "Number of passed and needed arguments dont match", pp2->ctx);
-      else if (arg.n >= 0)
-        push_fnlike_arg(pp2, &arg, args, kv_A(def->argnames, argnum++));
+      push_fnlike_arg(pp2, &arg, args, kv_A(def->argnames, argnum++));
       break;
     }
     else if (token.kind == TOK_EOF) throw_error(pp2->token_source, token, "Unexpected EOF", pp2->ctx);
@@ -238,7 +236,7 @@ void stringify(Preprocessor2* pp2, MacroCallArgMap* args, MacroDef* def, TokenAr
     push_char_ds(buf, '\"');
     string str = new_str(arena_alloc(pp2->ctx->arena, buf->len), buf->len);
     memcpy((void*)str.cstr, get_cstr_from_ds(buf), buf->len);
-    kv_push(Token, *expanded, new_token(argtok.pos, str_to_sv(str), argtok.len));
+    kv_push(Token, *expanded, new_token(argtok.pos, str_to_sv(str), str.len));
   }
   *i += 1;
 }
@@ -270,22 +268,21 @@ void macro_use_fnlike(Preprocessor2* pp2, MacroDef* def) {
   track_mem(scope, &args, (void*)free_macro_call_arg_map);
   imap_init(args);
 
-  pp2->ctx->token_buf.n = 0;
+  TokenArray buf = {0};
 
   macro_use_fnlike_args(pp2, def, &args);
 
   // Cyclic macro check
   kv_push(interned_str, pp2->ctx->macro_stack, def->name);
-  macro_use_fnlike_body(pp2, &args, &pp2->ctx->token_buf, def);
+  macro_use_fnlike_body(pp2, &args, &buf, def);
 
-  TokenSource src = ts_from_array(pp2->ctx->token_buf, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenSource src = ts_from_array(buf, str_to_sv(kv_top(pp2->ctx->source_stack)));
   TokenArray result = recursively_expand(pp2, &src);
   kv_pop(pp2->ctx->macro_stack);
   track_mem(scope, &result, (void*)free_token_array);
 
   kv_push_vec(Token, pp2->stream, result);
   
-  pp2->ctx->token_buf.n = 0;
   pop_memscope(pp2->ctx);
 }
 

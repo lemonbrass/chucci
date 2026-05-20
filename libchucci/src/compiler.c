@@ -106,7 +106,6 @@ void free_compiler(ChucciCompiler* ctx) {
   kv_destroy(ctx->included_files);
   free_ds(&ctx->buf);
   kv_destroy(ctx->source_stack);
-  kv_destroy(ctx->token_buf);
   free_interntable(&ctx->table);
   free_opt(&ctx->options);
   imap_destroy(ctx->macros, free_macro_def);
