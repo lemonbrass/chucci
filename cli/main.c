@@ -14,6 +14,7 @@ int main() {
   da_string dsinput = new_ds();
   if (setjmp(onerror) == 0) {
     while (true) {
+      reset_ds(&dsinput);
       printf("chuccic> ");
       int ch;
       while ((ch = getchar()) != EOF && ch != '\n') {
@@ -28,7 +29,6 @@ int main() {
       TokenArray result = compiler_compile(&ctx);
       print_token_array(&result);
       kv_destroy(result);
-      reset_ds(&dsinput);
     }
     free_ds(&dsinput);
     free_compiler(&ctx);

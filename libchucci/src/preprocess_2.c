@@ -22,7 +22,10 @@ void step_pp2(Preprocessor2* pp2, Token* tok) {
       if (interned_eq(tok->ident, pp2->ctx->preprocessor_cmds[PP_DEFINE])) {
         macro_def(pp2);
         break;
-      } else {
+      } else if (interned_eq(tok->ident, pp2->ctx->preprocessor_cmds[PP_IF])) {
+
+      }
+      else {
         assert(false && "UNIMPLEMENTED");
       }
       break;

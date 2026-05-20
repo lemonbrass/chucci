@@ -25,11 +25,11 @@ Token lex_ident(Lexer* lexer) {
   interned_str ident = intern(lexer->ctx->table, sv_slice(lexer->cursor.source, pos.id, lexer->cursor.id-pos.id));
 
   #define X(a, b)\
-  if (interned_eq(ident, lexer->ctx->keywords[a])) return new_token(pos, a);
+  if (interned_eq(ident, lexer->ctx->keywords[a])) return new_token(pos, a, lexer->ctx->keywords[a].len);
   KEYWORDS(X)
   #undef X
 
-  return new_token(pos, ident);
+  return new_token(pos, ident, ident.len);
 }
 
 // TODO: All other types of num lexing
@@ -49,13 +49,13 @@ Token lex_num(Lexer* lexer) {
     }
   }
   string_view num = sv_slice(lexer->cursor.source, pos.id, lexer->cursor.id-pos.id);
-  return new_token(pos, num);
+  return new_token(pos, num, num.len);
 }
 
 Token lex_op(Lexer* lexer) {
   Cursor pos = lexer->cursor;
 
-  #define X(a, b, c) if (str_match_cursor(&lexer->cursor, sv_from_cstr(b))) return new_token(pos, a);
+  #define X(a, b, c) if (str_match_cursor(&lexer->cursor, sv_from_cstr(b))) return new_token(pos, a, strlen(b));
   OPERATORS(X)
   #undef X
 
@@ -73,7 +73,7 @@ Token lex_str(Lexer* lexer) {
   }
   advance_cursor(&lexer->cursor); // skip final "
   string_view str = sv_slice(lexer->cursor.source, pos.id, lexer->cursor.id-pos.id);
-  return new_token(pos, str);
+  return new_token(pos, str, str.len);
 }
 
 Token lex_next_token(Lexer* lexer) {
@@ -109,11 +109,11 @@ Token lex_next_token(Lexer* lexer) {
       advance_cursor(&lexer->cursor);
       goto end;
     case '\n':
-      token = new_token(pos, SEP_NEWLINE);
+      token = new_token(pos, SEP_NEWLINE, 1);
       advance_cursor(&lexer->cursor);
       goto end;
     #define X(a, b, c) \
-    case c: token = new_token(pos, a);\
+    case c: token = new_token(pos, a, strlen(b));\
             advance_cursor(&lexer->cursor);\
             goto end;
     SEPARATORS(X)

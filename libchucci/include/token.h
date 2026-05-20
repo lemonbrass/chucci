@@ -16,46 +16,46 @@ extern bool is_op_table[256];
 #define is_op(ch) (is_op_table[ch])
 
 #define OPERATORS(X) \
-    X(OP_SHL_EQ, "<<=", '<') \
-    X(OP_SHR_EQ, ">>=", '>') \
-    X(OP_ELLIPSIS, "...", '.') \
-    X(OP_INC, "++", '+') \
-    X(OP_DEC, "--", '-') \
-    X(OP_EQ, "==", '=') \
-    X(OP_NEQ, "!=", '!') \
-    X(OP_LE, "<=", '<') \
-    X(OP_GE, ">=", '>') \
-    X(OP_AND, "&&", '&') \
-    X(OP_OR, "||", '|') \
-    X(OP_SHL, "<<", '<') \
-    X(OP_SHR, ">>", '>') \
-    X(OP_TOKEN_PASTE, "##", '#') \
-    X(OP_ADD_EQ, "+=", '+') \
-    X(OP_SUB_EQ, "-=", '-') \
-    X(OP_MUL_EQ, "*=", '*') \
-    X(OP_DIV_EQ, "/=", '/') \
-    X(OP_MOD_EQ, "%=", '%') \
-    X(OP_AND_EQ, "&=", '&') \
-    X(OP_OR_EQ, "|=", '|') \
-    X(OP_XOR_EQ, "^=", '^') \
-    X(OP_ARROW, "->", '-') \
-    X(OP_ADD, "+", '+') \
-    X(OP_SUB, "-", '-') \
-    X(OP_MUL, "*", '*') \
-    X(OP_DIV, "/", '/') \
-    X(OP_MOD, "%", '%') \
-    X(OP_ASSIGN, "=", '=') \
-    X(OP_LT, "<", '<') \
-    X(OP_GT, ">", '>') \
-    X(OP_NOT, "!", '!') \
-    X(OP_BIT_AND, "&", '&') \
-    X(OP_BIT_OR, "|", '|') \
-    X(OP_BIT_XOR, "^", '^') \
-    X(OP_BIT_NOT, "~", '~') \
-    X(OP_QUESTION, "?", '?') \
-    X(OP_COLON, ":", ':') \
-    X(OP_DOT, ".", '.') \
-    X(OP_PREPROCESS, "#", '#')
+  X(OP_SHL_EQ, "<<=", '<') \
+  X(OP_SHR_EQ, ">>=", '>') \
+  X(OP_ELLIPSIS, "...", '.') \
+  X(OP_INC, "++", '+') \
+  X(OP_DEC, "--", '-') \
+  X(OP_EQ, "==", '=') \
+  X(OP_NEQ, "!=", '!') \
+  X(OP_LE, "<=", '<') \
+  X(OP_GE, ">=", '>') \
+  X(OP_AND, "&&", '&') \
+  X(OP_OR, "||", '|') \
+  X(OP_SHL, "<<", '<') \
+  X(OP_SHR, ">>", '>') \
+  X(OP_TOKEN_PASTE, "##", '#') \
+  X(OP_ADD_EQ, "+=", '+') \
+  X(OP_SUB_EQ, "-=", '-') \
+  X(OP_MUL_EQ, "*=", '*') \
+  X(OP_DIV_EQ, "/=", '/') \
+  X(OP_MOD_EQ, "%=", '%') \
+  X(OP_AND_EQ, "&=", '&') \
+  X(OP_OR_EQ, "|=", '|') \
+  X(OP_XOR_EQ, "^=", '^') \
+  X(OP_ARROW, "->", '-') \
+  X(OP_ADD, "+", '+') \
+  X(OP_SUB, "-", '-') \
+  X(OP_MUL, "*", '*') \
+  X(OP_DIV, "/", '/') \
+  X(OP_MOD, "%", '%') \
+  X(OP_ASSIGN, "=", '=') \
+  X(OP_LT, "<", '<') \
+  X(OP_GT, ">", '>') \
+  X(OP_NOT, "!", '!') \
+  X(OP_BIT_AND, "&", '&') \
+  X(OP_BIT_OR, "|", '|') \
+  X(OP_BIT_XOR, "^", '^') \
+  X(OP_BIT_NOT, "~", '~') \
+  X(OP_QUESTION, "?", '?') \
+  X(OP_COLON, ":", ':') \
+  X(OP_DOT, ".", '.') \
+  X(OP_PREPROCESS, "#", '#')
 
 #define SEPARATORS(X) \
   X(SEP_LPAREN, "(", '(') \
@@ -88,17 +88,17 @@ extern bool is_op_table[256];
   X(KW_SIZEOF, "sizeof")
 
 #define PREPROCESSOR_CMD(X) \
-X(PP_DEFINE, "define") \
-X(PP_UNDEF, "undef") \
-X(PP_IF, "if") \
-X(PP_IFDEF, "ifdef") \
-X(PP_IFNDEF, "ifndef") \
-X(PP_ELIF, "elif") \
-X(PP_ELSE, "else") \
-X(PP_ENDIF, "endif") \
-X(PP_ERROR, "error") \
-X(PP_LINE, "line") \
-X(PP_PRAGMA, "pragma") \
+  X(PP_DEFINE, "define") \
+  X(PP_UNDEF, "undef") \
+  X(PP_IF, "if") \
+  X(PP_IFDEF, "ifdef") \
+  X(PP_IFNDEF, "ifndef") \
+  X(PP_ELIF, "elif") \
+  X(PP_ELSE, "else") \
+  X(PP_ENDIF, "endif") \
+  X(PP_ERROR, "error") \
+  X(PP_LINE, "line") \
+  X(PP_PRAGMA, "pragma") \
 
 typedef enum {
   #define X(a, b) a,
@@ -134,6 +134,7 @@ typedef struct {
 
 typedef struct {
   Cursor pos;
+  uint16_t len;
   TokenKind kind;
   union {
     interned_str ident;
@@ -145,26 +146,25 @@ typedef struct {
 typedef kvec_t(Token) TokenArray;
 
 
-#define new_token(pos, data) \
+#define new_token(pos, data, len) \
    _Generic(data,\
    interned_str: new_tok_ident, \
    string_view: new_tok_val, \
-   int: new_tok_simple)(pos, data)
+   int: new_tok_simple)(pos, len, data)
 
 
 
 #define ERROR_TOKEN(pos, error) new_tok_error(pos, __LINE__, __FILE__, error)
-#define EOF_TOKEN(p) ((Token) { .kind=TOK_EOF, .pos=p })
+#define EOF_TOKEN(p) ((Token) { .kind=TOK_EOF, .pos=p, .len=1 })
 
 
 Token new_tok_error(Cursor pos, int c_line, const char* c_file, const char* error);
-Token new_tok_ident(Cursor pos, interned_str name);
-Token new_tok_val(Cursor pos, string_view val);
-Token new_tok_simple(Cursor pos, TokenKind keyword);
+Token new_tok_ident(Cursor pos, uint16_t len, interned_str name);
+Token new_tok_val(Cursor pos, uint16_t len, string_view val);
+Token new_tok_simple(Cursor pos, uint16_t len, TokenKind keyword);
 
 void print_token(Token* token);
 void print_token_pretty(Token* token);
-size_t get_token_len(Token token);
 string_view token_to_str(Token* token);
 string_view token_array_to_str(arena_t* arena, TokenArray* token);
 #endif

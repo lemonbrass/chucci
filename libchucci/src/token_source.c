@@ -39,7 +39,7 @@ void print_token_array(TokenArray* array) {
     print_token_pretty(&kv_A(*array, i));
     printf(" ");
   }
-  printf("\n");
+  if (array->n > 0) printf("\n");
 }
 
 Token peek_token(TokenSource* src) {

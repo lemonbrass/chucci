@@ -1,8 +1,9 @@
-#include "da_arena.h"
-#include "da_intern.h"
-#include "thirdparty/kvec.h"
+#include <da_arena.h>
+#include <da_intern.h>
+#include <thirdparty/kvec.h>
 #include <da_string.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <token.h>
@@ -24,15 +25,6 @@ bool is_op_table[256] = {
   OPERATORS(X)
 };
 #undef X
-
-size_t get_token_len(Token token) {
-  if (token.kind < TOK_EOF) return strlen(tok_to_str[token.kind]);
-  else if (token.kind == TOK_EOF) return 1;
-  else if (token.kind == TOK_VAL) return token.val.len;
-  else if (token.kind == TOK_IDENT) return token.ident.len;
-  else if (token.kind == SEP_NEWLINE) return 1;
-  else return 0;
-}
 
 string_view token_to_str(Token* token) {
   if (token->kind < TOK_EOF) return sv_from_cstr(tok_to_str[token->kind]);
@@ -58,11 +50,12 @@ string_view token_array_to_str(arena_t* arena, TokenArray* tokens) {
   return new_sv(base, len);
 }
 
-Token new_tok_ident(Cursor pos, interned_str name) {
+Token new_tok_ident(Cursor pos, uint16_t len, interned_str name) {
   Token token;
   token.kind = TOK_IDENT;
   token.pos = pos;
   token.ident = name;
+  token.len = len;
   return token;
 }
 
@@ -70,43 +63,31 @@ Token new_tok_error(Cursor pos, int c_line, const char* c_file, const char* erro
   Token token;
   token.kind = TOK_ERROR;
   token.pos = pos;
+  token.len = 1;
   token.error = (TokenError) { .str=error, .c_file=c_file, .c_line=c_line };
   return token;
 }
 
-Token new_tok_val(Cursor pos, string_view val) {
+Token new_tok_val(Cursor pos, uint16_t len, string_view val) {
   Token token;
   token.kind = TOK_VAL;
   token.pos = pos;
   token.val = val;
+  token.len = len;
   return token;
 }
 
-Token new_tok_simple(Cursor pos, TokenKind kind) {
+Token new_tok_simple(Cursor pos, uint16_t len, TokenKind kind) {
   Token token;
   token.kind = kind;
   token.pos = pos;
+  token.len = len;
   return token;
 }
 
 void print_token(Token* token) {
-  switch (token->kind) {
-    #define X(a, b, c) case a: printf("op(%s) at (%zu, %zu)", b, token->pos.line, token->pos.col); break;
-     OPERATORS(X)
-    #undef X
-    #define X(a, b, c) case a: printf("sep(%s) at (%zu, %zu)", b, token->pos.line, token->pos.col); break;
-     SEPARATORS(X)
-    #undef X
-    #define X(a, b) case a: printf("keyword(%s) at (%zu, %zu)", b, token->pos.line, token->pos.col); break;
-     KEYWORDS(X)
-    #undef X
-    case TOK_EOF:   printf("eof at (%zu, %zu)", token->pos.line, token->pos.col); break;
-    case TOK_ERROR: printf("error(%s: %s at %d) at (%zu, %zu)", token->error.str, token->error.c_file, token->error.c_line, token->pos.line, token->pos.col); break;
-    case TOK_VAL:   printf("val(%.*s) at (%zu, %zu)", (int)token->val.len, token->val.cstr, token->pos.line, token->pos.col); break;
-    case SEP_NEWLINE:   printf("sep(\\n) at (%zu, %zu)", token->pos.line, token->pos.col); break;
-    case TOK_IDENT: printf("ident(%.*s) at (%zu, %zu)", (int)token->ident.len, token->ident.cstr, token->pos.line, token->pos.col); break;
-    default: assert(false && "UNREACHABLE");
-  }
+  print_token_pretty(token);
+  printf(" with len = %d, at (%zu, %zu)", token->len, token->pos.col, token->pos.line);
 }
 void print_token_pretty(Token* token) {
   switch (token->kind) {
