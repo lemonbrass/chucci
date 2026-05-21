@@ -1,6 +1,7 @@
 #ifndef PP2_MACRO_H
 #define PP2_MACRO_H
 
+#include "token.h"
 #include <compiler.h>
 #include <da_intern.h>
 #include <token_source.h>
@@ -21,7 +22,7 @@ typedef struct MacroDef{
 
 void free_macro_def(MacroDef* def);
 void macro_def(struct Preprocessor2* pp2);
-void macro_use(struct Preprocessor2* pp2, Token* token);
+void macro_use(struct Preprocessor2* pp2, Token* token, TokenArray* out);
 void print_macro_def(MacroDef* def);
 
 #endif

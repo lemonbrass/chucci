@@ -1,3 +1,4 @@
+#include "pp2_cond.h"
 #include <da_string.h>
 #include <pp2_macro.h>
 #include <da_internmap.h>
@@ -18,20 +19,21 @@ Preprocessor2 new_pp2(ChucciCompiler* ctx, TokenSource* token_source) {
 void step_pp2(Preprocessor2* pp2, Token* tok) {
   switch (tok->kind) {
     case OP_PREPROCESS:
-      *tok = expect_token_kind(pp2->token_source, TOK_IDENT, pp2->ctx);
+      *tok = next_token(pp2->token_source);
       if (interned_eq(tok->ident, pp2->ctx->preprocessor_cmds[PP_DEFINE])) {
         macro_def(pp2);
         break;
-      } else if (interned_eq(tok->ident, pp2->ctx->preprocessor_cmds[PP_IF])) {
-
+      } else if (tok->kind == KW_IF) {
+        cond_use(pp2);
+        break;
       }
       else {
-        assert(false && "UNIMPLEMENTED");
+        throw_error(pp2->token_source, *tok, "Unexpected token", pp2->ctx);
       }
       break;
     case TOK_IDENT:
       if (imap_has(pp2->ctx->macros, tok->ident) == 1) {
-        macro_use(pp2, tok);
+        macro_use(pp2, tok, &pp2->stream);
         break;
       }
     default:

@@ -9,11 +9,11 @@
 #include <token.h>
 
 const char* tok_to_str[__token_kind_count] = {
-  #define X(a, b, c) b,
-  OPERATORS(X)
-  #undef X
   #define X(a, b) b,
   KEYWORDS(X)
+  #undef X
+  #define X(a, b, c) b,
+  OPERATORS(X)
   #undef X
   #define X(a, b, c) b,
   SEPARATORS(X)

@@ -17,10 +17,8 @@
 #define s_print(s) printf("%.*s", (int)s.len, s.cstr)
 #define s_println(s) printf("%.*s\n", (int)s.len, s.cstr)
 #define s_eq(str1, str2) (((str1).len == (str2).len) && (memcmp((str1).cstr, (str2).cstr, (str1).len) == 0))
-#define cs_eq(str, cstr) \
-  ((strlen(cstr) == (str).len) && \
-   (memcmp((str).cstr, (cstr), (str).len) == 0))
-
+#define cs_eq(str, cstr) s_eq((str), sv_from_cstr(cstr))
+#define s_endswith(str, delim) ((str).len >= strlen(delim) && strncmp((str).cstr + (str).len - strlen(delim), (delim), strlen(delim)) == 0)
 // Immutable and DOESNT OWN the memory
 typedef struct {
   const char* cstr;

@@ -17,7 +17,6 @@ typedef struct {
     Lexer* lexer;
     struct {
       TokenArray tokens;
-      string_view source;
       size_t pos;
     } array;
   };
@@ -25,15 +24,17 @@ typedef struct {
 } TokenSource;
 
 TokenSource ts_from_lexer(Lexer* lexer);
-TokenSource ts_from_array(TokenArray array, string_view source);
+TokenSource ts_from_array(TokenArray array);
 
 Token next_token(TokenSource* src);
 Token peek_token(TokenSource* src);
 Token peek_nth(TokenSource* src, size_t n);
 Token expect_token_kind(TokenSource* src, TokenKind kind, ChucciCompiler* ctx);
 
+#define throw_error(src, errtok, errmsg, ctx) _throw_error(src, errtok, errmsg, ctx, __FILE__, __LINE__)
+
 void print_token_array(TokenArray* array);
-void throw_error(TokenSource* src, Token errtok, const char* errmsg, ChucciCompiler* ctx);
+void _throw_error(TokenSource* src, Token errtok, const char* errmsg, ChucciCompiler* ctx, const char* file, int line);
 void give_warning(TokenSource* src, Token warningtok, const char* warningmsg, ChucciCompiler* ctx);
 
 #endif

@@ -14,19 +14,18 @@ TokenSource ts_from_lexer(Lexer* lexer) {
   src.lexer = lexer;
   return src;
 }
-TokenSource ts_from_array(TokenArray array, string_view source) {
+TokenSource ts_from_array(TokenArray array) {
   TokenSource src = {0};
   src.kind = SK_ARRAY;
   src.array.tokens = array;
   src.array.pos = 0;
-  src.array.source = source;
   return src;
 }
 
 Token next_token(TokenSource* src) {
   switch (src->kind) {
     case SK_ARRAY:
-      if (src->array.tokens.n == 0) return EOF_TOKEN(new_cursor(src->array.source));
+      if (src->array.tokens.n == 0) return EOF_TOKEN({0});
       if (src->array.pos >= src->array.tokens.n) return EOF_TOKEN(kv_top(src->array.tokens).pos);
       return kv_A(src->array.tokens, src->array.pos++);
     case SK_LEXER:
@@ -67,8 +66,8 @@ Token expect_token_kind(TokenSource* src, TokenKind kind, ChucciCompiler* ctx) {
   return token;
 }
 
-void throw_error(TokenSource* src, Token errtok, const char* errormsg, ChucciCompiler* ctx) {
-  printf("Error: %s: ", errormsg);
+void _throw_error(TokenSource* src, Token errtok, const char* errmsg, ChucciCompiler* ctx, const char* file, int line) {
+  printf("Error (%s:%d): %s: ", file, line, errmsg);
   print_token_pretty(&errtok);
   printf("\n");
   dump_cursor(&errtok.pos);

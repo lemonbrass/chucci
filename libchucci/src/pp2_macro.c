@@ -108,6 +108,10 @@ void macro_def(Preprocessor2* pp2) {
     macro_def_parse_args(pp2, &def);
   macro_def_parse_body(pp2, &def);
 
+  if (imap_has(pp2->ctx->macros, name.ident)) {
+    MacroDef* olddef = imap_get(pp2->ctx->macros, name.ident);
+    free_macro_def(olddef);
+  }
   imap_set(def, pp2->ctx->macros, name.ident);
   untrack_mem(scope, &def);
   pop_memscope(pp2->ctx);
@@ -130,7 +134,7 @@ void fnlike_args_match_paren(Preprocessor2* pp2, TokenArray* arg) {
 }
 
 void push_fnlike_arg(Preprocessor2* pp2, TokenArray* arg, MacroCallArgMap* args, interned_str argname) {
-  TokenSource src = ts_from_array(*arg, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenSource src = ts_from_array(*arg);
   TokenArray result = recursively_expand(pp2, &src);
   imap_set(result, *args, argname);
 
@@ -258,7 +262,7 @@ void macro_use_fnlike_body(Preprocessor2* pp2, MacroCallArgMap* args, TokenArray
   *expanded = buf;
 }
 
-void macro_use_fnlike(Preprocessor2* pp2, MacroDef* def) {
+void macro_use_fnlike(Preprocessor2* pp2, MacroDef* def, TokenArray* out) {
   MemScope* scope = new_scope();
   push_memscope(pp2->ctx, scope);
 
@@ -275,23 +279,23 @@ void macro_use_fnlike(Preprocessor2* pp2, MacroDef* def) {
   kv_push(interned_str, pp2->ctx->macro_stack, def->name);
   macro_use_fnlike_body(pp2, &args, &buf, def);
 
-  TokenSource src = ts_from_array(buf, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenSource src = ts_from_array(buf);
   TokenArray result = recursively_expand(pp2, &src);
   kv_pop(pp2->ctx->macro_stack);
   track_mem(scope, &result, (void*)free_token_array);
 
-  kv_push_vec(Token, pp2->stream, result);
+  kv_push_vec(Token, *out, result);
   
   pop_memscope(pp2->ctx);
 }
 
-void macro_use_objlike(Preprocessor2* pp2, MacroDef* def) {
+void macro_use_objlike(Preprocessor2* pp2, MacroDef* def, TokenArray* out) {
   kv_push(interned_str, pp2->ctx->macro_stack, def->name);
-  TokenSource src = ts_from_array(def->body, str_to_sv(kv_top(pp2->ctx->source_stack)));
+  TokenSource src = ts_from_array(def->body);
   TokenArray result = recursively_expand(pp2, &src);
   kv_pop(pp2->ctx->macro_stack);
 
-  kv_push_vec(Token, pp2->stream, result);
+  kv_push_vec(Token, *out, result);
   free_token_array(&result);
 }
 
@@ -302,20 +306,20 @@ bool check_cyclic_macros(Preprocessor2* pp2, interned_str name) {
   return false;
 }
 
-void macro_use(Preprocessor2* pp2, Token* token) {
+void macro_use(Preprocessor2* pp2, Token* token, TokenArray* out) {
   MacroDef* def = imap_get(pp2->ctx->macros, token->ident);
   if (!def) return;
   if (check_cyclic_macros(pp2, token->ident)) {
-    kv_push(Token, pp2->stream, *token);
+    kv_push(Token, *out, *token);
     return;
   }
 
   if (def->is_functionlike && peek_token(pp2->token_source).kind == SEP_LPAREN)
-    macro_use_fnlike(pp2, def);
+    macro_use_fnlike(pp2, def, out);
   else if (!def->is_functionlike)
-    macro_use_objlike(pp2, def);
+    macro_use_objlike(pp2, def, out);
   else
-    kv_push(Token, pp2->stream, *token);
+    kv_push(Token, *out, *token);
 }
 
 void free_macro_def(MacroDef *def) {

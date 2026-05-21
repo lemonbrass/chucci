@@ -119,7 +119,6 @@ static InternEntry* intern_find_and_fill_owned(InternTable* table, string str) {
     entry->str = str;
     entry->h = h;
     entry->id = table->len++;
-    memcpy((char*)entry->str.cstr, str.cstr, str.len);
   }
   return entry;
 }
