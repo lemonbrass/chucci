@@ -1,10 +1,10 @@
 #ifndef DA_INTERN_H
 #define DA_INTERN_H
 
-#include <da_arena.h>
+#include <utils/da_arena.h>
 #include <stdbool.h>
 #include <thirdparty/kvec.h>
-#include <da_string.h>
+#include <utils/da_string.h>
 #include <stdint.h>
 
 #ifndef INTERN_LOAD_FACTOR

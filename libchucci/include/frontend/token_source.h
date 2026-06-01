@@ -2,10 +2,10 @@
 #define TOKEN_SOURCE_H
 
 #include <compiler.h>
-#include <da_string.h>
-#include <token.h>
+#include <utils/da_string.h>
+#include <frontend/token.h>
 #include <thirdparty/kvec.h>
-#include <lexer.h>
+#include <frontend/lexer.h>
 
 typedef enum SourceKind {
   SK_ARRAY,
@@ -32,9 +32,10 @@ Token peek_nth(TokenSource* src, size_t n);
 Token expect_token_kind(TokenSource* src, TokenKind kind, ChucciCompiler* ctx);
 
 #define throw_error(src, errtok, errmsg, ctx) _throw_error(src, errtok, errmsg, ctx, __FILE__, __LINE__)
+#define new_tokenarray() (TokenArray){0}
 
 void print_token_array(TokenArray* array);
-void _throw_error(TokenSource* src, Token errtok, const char* errmsg, ChucciCompiler* ctx, const char* file, int line);
+_Noreturn void _throw_error(TokenSource* src, Token errtok, const char* errmsg, ChucciCompiler* ctx, const char* file, int line);
 void give_warning(TokenSource* src, Token warningtok, const char* warningmsg, ChucciCompiler* ctx);
 
 #endif

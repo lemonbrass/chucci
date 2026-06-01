@@ -1,9 +1,9 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <token.h>
+#include <frontend/token.h>
 #include <compiler.h>
-#include <cursor.h>
+#include <frontend/cursor.h>
 
 typedef CursorMark LexerMark;
 

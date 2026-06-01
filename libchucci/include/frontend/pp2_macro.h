@@ -1,12 +1,12 @@
 #ifndef PP2_MACRO_H
 #define PP2_MACRO_H
 
-#include "token.h"
+#include <frontend/token.h>
 #include <compiler.h>
-#include <da_intern.h>
-#include <token_source.h>
-#include <lexer.h>
-#include <da_internmap.h>
+#include <utils/da_intern.h>
+#include <frontend/token_source.h>
+#include <frontend/lexer.h>
+#include <utils/da_internmap.h>
 
 struct Preprocessor2;
 

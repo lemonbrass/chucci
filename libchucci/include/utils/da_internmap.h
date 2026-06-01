@@ -2,7 +2,7 @@
 #define DA_INTERN_MAP
 
 #include <thirdparty/kvec.h>
-#include <da_bitset.h>
+#include <utils/da_bitset.h>
 
 /*
   This is not a hashmap, but acts like one..

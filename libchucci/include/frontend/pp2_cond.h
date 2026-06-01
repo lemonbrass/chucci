@@ -1,9 +1,9 @@
 #ifndef PP2_COND_H
 #define PP2_COND_H
 
-#include <da_intern.h>
-#include <token.h>
-#include <preprocess_2.h>
+#include <utils/da_intern.h>
+#include <frontend/token.h>
+#include <frontend/preprocess_2.h>
 
 #define PP_INFIX_OPERATORS(X) \
   X(OP_OR, ||, 30) \

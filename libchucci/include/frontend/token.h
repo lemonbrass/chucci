@@ -1,11 +1,10 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include <da_arena.h>
 #include <assert.h>
-#include <da_string.h>
-#include <cursor.h>
-#include <da_intern.h>
+#include <utils/da_string.h>
+#include <frontend/cursor.h>
+#include <utils/da_intern.h>
 
 extern const char* keyword_to_str[];
 extern const char* op_to_str[];

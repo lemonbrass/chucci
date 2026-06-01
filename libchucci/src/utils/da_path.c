@@ -1,10 +1,9 @@
 #include <cursor.h>
-#include <da_string.h>
 #include <da_path.h>
+#include <da_string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 Path new_path(string_view pathstr) {
   Path p = {0};
@@ -16,52 +15,55 @@ Path new_path(string_view pathstr) {
   return p;
 }
 
-Path new_path_from_cstr(char* pathstr) {
+Path new_path_from_cstr(char *pathstr) {
   Path p = {0};
   p.len = strlen(pathstr);
   p.cstr = strdup(pathstr);
   return p;
 }
 
-bool path_eq(Path* path1, Path* path2) {
+Path new_path_from_cstr_borrowed(char *pathstr) {
+  Path p = {0};
+  p.cstr = pathstr;
+  p.len = strlen(pathstr);
+  return p;
+}
+
+bool path_eq(Path *path1, Path *path2) {
   return path1->len == path2->len && strcmp(path1->cstr, path2->cstr) == 0;
 }
 
-string_view path_to_sv(Path *path) {
-  return new_sv(path->cstr, path->len);
-}
+string_view path_to_sv(Path *path) { return new_sv(path->cstr, path->len); }
 
-string path_to_str(Path* path) {
-  return new_str(path->cstr, path->len);
-}
+string path_to_str(Path *path) { return new_str(path->cstr, path->len); }
 
-bool is_path_absolute(Path* path) {
+bool is_path_absolute(Path *path) {
   Cursor cursor = new_cursor(path_to_sv(path));
   // POSIX
-  if (ch_match_cursor(&cursor, '/')) return true;
+  if (ch_match_cursor(&cursor, '/'))
+    return true;
 
   // WINDOWS
   char curr = peek(&cursor);
   if ((curr >= 'A' && curr <= 'Z') || (curr >= 'a' && curr <= 'z')) {
     advance_cursor(&cursor);
-    if (!ch_match_cursor(&cursor, ':')) return false;
+    if (!ch_match_cursor(&cursor, ':'))
+      return false;
     curr = peek(&cursor);
     return curr == '/' || curr == '\\';
   }
   return str_match_cursor(&cursor, sv_from_cstr("\\\\"));
 }
 
-bool is_path_relative(Path* path) {
-  return !is_path_absolute(path);
-}
+bool is_path_relative(Path *path) { return !is_path_absolute(path); }
 
-bool path_exists(Path* path) {
-  FILE* f = fopen(path->cstr, "rb");
+bool path_exists(Path *path) {
+  FILE *f = fopen(path->cstr, "rb");
   if (f) {
     fclose(f);
     return true;
-  }
-  else return false;
+  } else
+    return false;
 }
 
 #ifndef _WIN32
@@ -82,8 +84,8 @@ PathType get_path_type(Path *path) {
   return PATH_INVALID; // symlink, device, etc. (you can expand if needed)
 }
 
-string get_absolute_path(Path* path) {
-  char* cstr = realpath(path->cstr, NULL);
+string get_absolute_path(Path *path) {
+  char *cstr = realpath(path->cstr, NULL);
   return new_str(cstr, strlen(cstr));
 }
 
@@ -103,39 +105,41 @@ PathType get_path_type(Path *path) {
   return PATH_FILE;
 }
 
-string_view get_absolute_path(Path* path) {
+string_view get_absolute_path(Path *path) {
   char buffer[MAX_PATH];
   DWORD len = GetFullPathNameA(path->cstr, MAX_PATH, buffer, NULL);
-  if (len == 0) return NULL;
+  if (len == 0)
+    return NULL;
   return new_sv(_strdup(buffer), len);
 }
 
 #endif
 
-string_view get_path_directory(Path* path) {
+string_view get_path_directory(Path *path) {
   assert(path->len != 0);
-  size_t i = path->len-1;
-  // if path has a traling '/' or '\' 
+  size_t i = path->len - 1;
+  // if path has a traling '/' or '\'
   if (path->cstr[i] == '/' || path->cstr[i] == '\\') {
     i--;
-    assert(i>0);
+    assert(i > 0);
   }
-  while (i > 0 && path->cstr[i] != '/' && path->cstr[i] != '\\') i--;
+  while (i > 0 && path->cstr[i] != '/' && path->cstr[i] != '\\')
+    i--;
   assert(i > 0 && (path->cstr[i] == '/' || path->cstr[i] == '\\'));
-  return sv_slice(path_to_sv(path), 0, i+1);
+  return sv_slice(path_to_sv(path), 0, i + 1);
 }
 
-string read_file(Path* path) {
-  FILE* f = fopen(path->cstr, "rb");
+string read_file(Path *path) {
+  FILE *f = fopen(path->cstr, "rb");
   assert(f != NULL);
 
   assert(fseek(f, 0, SEEK_END) == 0);
 
   long size = ftell(f);
-  assert(size>=0);
+  assert(size >= 0);
   rewind(f);
 
-  char* buf = malloc(size + 1);
+  char *buf = malloc(size + 1);
   assert(buf != NULL);
   size_t read = fread(buf, sizeof(char), size, f);
 
@@ -149,7 +153,6 @@ string read_file(Path* path) {
   buf[size] = '\0';
   return new_str(buf, size);
 }
-
 
 void free_path(Path *path) {
   free(path->cstr);

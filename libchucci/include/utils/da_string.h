@@ -7,7 +7,6 @@
 #endif
 #define DS_DEFAULT_CAPACITY DS_SSO_CAP
 
-#include <da_arena.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stddef.h>

@@ -1,8 +1,8 @@
 #ifndef DA_PATH_H
 #define DA_PATH_H
 
-#include <da_arena.h>
-#include <da_string.h>
+#include <utils/da_arena.h>
+#include <utils/da_string.h>
 
 typedef struct {
   char* cstr;
@@ -17,6 +17,7 @@ typedef enum {
 
 Path new_path(string_view pathstr);
 Path new_path_from_cstr(char* pathstr);
+Path new_path_from_cstr_borrowed(char* pathstr);
 string get_absolute_path(Path* path);
 bool is_path_absolute(Path* path);
 bool is_path_relative(Path* path);
