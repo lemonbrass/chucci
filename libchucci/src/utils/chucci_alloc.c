@@ -11,6 +11,7 @@ static void _free(void *ctx, void *ptr) { free(ptr); }
 static void *_realloc(void *ctx, void *ptr, size_t old_size, size_t new_size) {
   return realloc(ptr, new_size);
 }
+
 static void no_op(void *_a, void *_b) {
   (void)_a;
   (void)_b;

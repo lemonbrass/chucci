@@ -1,27 +1,23 @@
-#include "utils/chucci_alloc.h"
-// #include "utils/chunked_arena.h"
-#include "utils/vec.h"
+#include "utils/string.h"
+#include "utils/string_interner.h"
 #include "utils/vmem_arena.h"
+#include <assert.h>
 #include <stdio.h>
 
-VEC_DEF(int, IntVec, ints);
-VEC_IMPL(int, IntVec, ints, VMEM_ARENA_ALLOC_INT);
-
-#define VEC_LEN 1024
-
 int main() {
-  // ChunkedArena charena = chnk_arena_new();
   VMEMArena vmarena = vmarena_new();
+  StringInterner baba = interner_new(&vmarena);
 
-  IntVec vec = ints_new();
-  ints_resize(&vec, VEC_LEN, &vmarena);
+  StringID a = intern(cstr_to_anystr("baba", StringView), &baba);
+  StringID b = intern(cstr_to_anystr("baba", StringView), &baba);
+  StringID c = intern(cstr_to_anystr("baba", StringView), &baba);
+  StringID d = intern(cstr_to_anystr("baba", StringView), &baba);
 
-  for (size_t i = 0; i < VEC_LEN; i++)
-    ints_push(&vec, i, &vmarena);
+  printf("%d, %d, %d, %d\n", a, b, c, d);
+  assert(
+      str_eq(cstr_to_anystr("a", StringView), cstr_to_anystr("a", StringView)));
+  assert(a == b && b == c && c == d);
 
-  vec_foreach(int, &vec, i, num, { printf("%zu: %d, ", i, num); });
-  printf("\n");
-
+  interner_free(&baba);
   vmarena_free(&vmarena);
-  // chnk_arena_free(&charena);
 }

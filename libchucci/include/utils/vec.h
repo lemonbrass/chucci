@@ -98,6 +98,6 @@ T* prefix##_access_ptr(name* vec, size_t i) {\
   return &vec->data[i];\
 }
 
-#define vec_foreach(T, vec, idx, element, body) for (size_t idx=0; i<(vec)->len; idx++) { T element = (vec)->data[idx]; body;}
+#define vec_foreach(T, vec, idx, element, body) for (size_t idx=0; idx<(vec)->len; idx++) { T element = (vec)->data[idx]; body;}
 
 #endif
