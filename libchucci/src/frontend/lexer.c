@@ -1,0 +1,141 @@
+#include "frontend/lexer.h"
+#include "compiler.h"
+#include "frontend/cursor.h"
+#include "frontend/token.h"
+#include "utils/diagnostics.h"
+#include "utils/string.h"
+#include "utils/string_interner.h"
+#include "utils/vmem_arena.h"
+#include <assert.h>
+#include <ctype.h>
+#include <stdbool.h>
+
+#define current_source(ctx) (filevec_top(&(ctx)->sources))
+#define cursor(lexer) (&(lexer)->cursor)
+#define get_cursor_mark(lexer) cursor_mark(cursor(lexer))
+
+StringID keyword_to_id[__token_kind_count];
+
+Lexer *lexer_new(CompilerCtx *ctx) {
+#define X(kind, str)                                                           \
+  keyword_to_id[kind] = intern(cstr_to_anystr(str, StringView), ctx->interner);
+  KEYWORDS(X)
+#undef X
+  Lexer *lexer = vmarena_calloc(ctx->arena, sizeof(Lexer));
+  lexer->ctx = ctx;
+  lexer->cursor = cursor_new(current_source(ctx));
+  return lexer;
+}
+
+Token lex_op_sep(Lexer *lexer, char ch) {
+#define X(kind, str, ch1)                                                      \
+  if (ch1 == ch &&                                                             \
+      cursor_match_str(cursor(lexer), cstr_to_anystr(str, StringView)))        \
+    return new_tok_simple(get_cursor_mark(lexer),                              \
+                          anystr_new(StringView, str, strlen(str)), kind);
+  OPERATORS(X)
+  SEPARATORS(X)
+#undef X
+  assert(false);
+}
+
+Token lex_num(Lexer *lexer) {
+  CursorMark mark1 = get_cursor_mark(lexer);
+  char ch = cursor_advance(cursor(lexer));
+  bool is_float = false;
+  while (ch = cursor_peek(cursor(lexer)), true) {
+    if (!isdigit(ch) && ch != '.')
+      break;
+    if (ch == '.') {
+      if (is_float) {
+        CursorMark mark2 = cursor_mark(cursor(lexer));
+        Diagnostic diag = diagnostic_new(ERR_INVALID_NUMERIC_LITERAL,
+                                         lexer->cursor, mark1, mark2);
+        diagnostic_add(lexer->ctx->engine, diag);
+      }
+      is_float = true;
+    }
+    cursor_advance(cursor(lexer));
+  }
+  CursorMark mark2 = get_cursor_mark(lexer);
+
+  StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
+  return new_tok_val(mark1, lexeme);
+}
+
+Token lex_str(Lexer *lexer) {
+  CursorMark mark1 = get_cursor_mark(lexer);
+  char ch = cursor_advance(cursor(lexer));
+  while (true) {
+    ch = cursor_peek(cursor(lexer));
+    if (ch == '\\') {
+      cursor_advance(cursor(lexer)); // skip '\\'
+      cursor_advance(cursor(lexer)); // skip the escape character
+      ch = cursor_peek(cursor(lexer));
+    }
+    if (ch == '\"') {
+      cursor_advance(cursor(lexer));
+      break;
+    }
+    if (ch == '\0' || ch == '\n') {
+      CursorMark mark2 = cursor_mark(cursor(lexer));
+      Diagnostic diag =
+          diagnostic_new(ERR_UNTERMINATED_STRING, lexer->cursor, mark1, mark2);
+      diagnostic_add(lexer->ctx->engine, diag);
+      break;
+    }
+    cursor_advance(cursor(lexer));
+  }
+  CursorMark mark2 = get_cursor_mark(lexer);
+
+  StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
+  return new_tok_val(mark1, lexeme);
+}
+
+Token lex_ident(Lexer *lexer, char ch) {
+  CursorMark mark1 = get_cursor_mark(lexer);
+  while (true) {
+    ch = cursor_peek(cursor(lexer));
+    if (!isalnum((unsigned char)ch) && ch != '_')
+      break;
+    cursor_advance(cursor(lexer));
+  }
+  CursorMark mark2 = get_cursor_mark(lexer);
+
+  StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
+  StringID id = intern(lexeme, lexer->ctx->interner);
+
+#define X(kind, _)                                                             \
+  if (keyword_to_id[kind] == id)                                               \
+    return new_tok_simple(get_cursor_mark(lexer), lexeme, kind);
+  KEYWORDS(X)
+#undef X
+
+  return new_tok_ident(mark1, lexeme, id);
+}
+
+Token next_token(Lexer *lexer) {
+  skip_whitespace_except_newline(cursor(lexer));
+  char ch = cursor_peek(cursor(lexer));
+  if (ch == '\0')
+    return new_tok_simple(
+        get_cursor_mark(lexer),
+        cursor_slice(cursor(lexer), lexer->cursor.id, lexer->cursor.id + 1),
+        TOK_EOF);
+  if (ch == '\n') {
+    cursor_advance(cursor(lexer));
+    return new_tok_simple(
+        get_cursor_mark(lexer),
+        cursor_slice(cursor(lexer), lexer->cursor.id, lexer->cursor.id + 1),
+        SEP_NEWLINE);
+  }
+  if (isalpha((unsigned char)ch) || ch == '_')
+    return lex_ident(lexer, ch);
+  if (ch == '\"')
+    return lex_str(lexer);
+  if (isdigit(ch))
+    return lex_num(lexer);
+  if (is_op(ch) || is_sep(ch))
+    return lex_op_sep(lexer, ch);
+  assert(false);
+}

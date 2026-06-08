@@ -1,23 +1,22 @@
+#include "compiler.h"
 #include "utils/string.h"
-#include "utils/string_interner.h"
-#include "utils/vmem_arena.h"
-#include <assert.h>
-#include <stdio.h>
+#include <setjmp.h>
+
+jmp_buf onerror;
 
 int main() {
-  VMEMArena vmarena = vmarena_new();
-  StringInterner baba = interner_new(&vmarena);
+  CompilerCtx *ctx = compiler_new(&onerror);
+  char *source = "int x_y_haha = \"HUiHUi\n\";";
+  File file = {.contents = cstr_to_anystr(source, String),
+               .name = cstr_to_anystr("scratch", StringView)};
 
-  StringID a = intern(cstr_to_anystr("baba", StringView), &baba);
-  StringID b = intern(cstr_to_anystr("baba", StringView), &baba);
-  StringID c = intern(cstr_to_anystr("baba", StringView), &baba);
-  StringID d = intern(cstr_to_anystr("baba", StringView), &baba);
+  cc_add_source(ctx, file);
 
-  printf("%d, %d, %d, %d\n", a, b, c, d);
-  assert(
-      str_eq(cstr_to_anystr("a", StringView), cstr_to_anystr("a", StringView)));
-  assert(a == b && b == c && c == d);
-
-  interner_free(&baba);
-  vmarena_free(&vmarena);
+  if (setjmp(onerror) == 0) {
+    cc_preamble(ctx);
+    cc_compile(ctx);
+  } else {
+    // error
+  }
+  cc_free(ctx);
 }

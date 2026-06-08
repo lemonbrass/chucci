@@ -1,6 +1,54 @@
 #include "compiler.h"
+#include "frontend/lexer.h"
+#include "frontend/token.h"
 #include "utils/chucci_alloc.h"
+#include "utils/diagnostics.h"
+#include "utils/file.h"
 #include "utils/smallvec.h"
 #include "utils/string.h"
+#include "utils/string_interner.h"
+#include "utils/vmem_arena.h"
+#include <setjmp.h>
 
-SMALLVEC_IMPL(String, StringStack, string_stack, VMEM_ARENA_ALLOC_INT)
+SMALLVEC_IMPL(String, StringVec, stringvec, VMEM_ARENA_ALLOC_INT)
+
+CompilerCtx *compiler_new(jmp_buf *onerror) {
+  VMEMArena *arena = vmarena_new(VMEM_ARENA_MAX_CAP);
+  CompilerCtx *ctx = vmarena_calloc(arena, sizeof(CompilerCtx));
+  ctx->arena = arena;
+  ctx->engine = diagnostic_engine_new(arena);
+  ctx->interner = interner_new(arena);
+  ctx->onerror = onerror;
+  return ctx;
+}
+
+void cc_add_source(CompilerCtx *ctx, File source) {
+  filevec_push(&ctx->sources, source, ctx->arena);
+}
+
+void cc_preamble(CompilerCtx *ctx) { ctx->lexer = lexer_new(ctx); }
+
+void cc_compile(CompilerCtx *ctx) {
+  assert(filevec_len(&ctx->sources) > 0);
+  assert(ctx->arena->data);
+  // Testing code for now, till compiler is complete
+  Token token = {0};
+  while (token.kind != TOK_EOF) {
+    token = next_token(ctx->lexer);
+    printf("Token: ");
+    print_token_pretty(&token, ctx->interner);
+    printf("\n");
+  }
+  if (has_fatal_diagnostics(ctx->engine)) {
+    diagnostics_emit(ctx->engine);
+    longjmp(*ctx->onerror, 1);
+  }
+}
+
+void cc_free(CompilerCtx *ctx) {
+  interner_free(ctx->interner);
+  diagnostic_engine_free(ctx->engine);
+  filevec_free(&ctx->sources, &ctx->arena);
+  stringvec_free(&ctx->included_dirs, &ctx->arena);
+  vmarena_free(ctx->arena);
+}

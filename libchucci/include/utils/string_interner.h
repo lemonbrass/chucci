@@ -36,8 +36,9 @@ typedef struct StringInterner {
   VMEMArena *arena;
 } StringInterner;
 
-StringInterner interner_new(VMEMArena *arena);
+StringInterner* interner_new(VMEMArena *arena);
 StringID intern(StringView str, StringInterner *interner);
+StringView get_interned_sv(StringInterner *interner, StringID id);
 void interner_free(StringInterner *interner);
 
 #endif

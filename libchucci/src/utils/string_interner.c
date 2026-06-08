@@ -5,6 +5,7 @@
 #include "utils/vmem_arena.h"
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #define is_pow_2(n) ((n & (n - 1)) == 0)
@@ -16,24 +17,29 @@
 
 VEC_IMPL(InternEntry, InternEntryVec, intrn_entries, MALLOC_ALLOC_INT)
 
-StringInterner interner_new(VMEMArena *arena) {
-  StringInterner interner = {0};
-  interner.cap = DEFAULT_STRING_INTERNER_CAP;
-  assert(is_pow_2(interner.cap));
-  interner.entries = intrn_entries_new();
-  intrn_entries_resize(&interner.entries, interner.cap, NULL);
+StringInterner *interner_new(VMEMArena *arena) {
+  StringInterner *interner = vmarena_alloc(arena, sizeof(StringInterner));
+  interner->cap = DEFAULT_STRING_INTERNER_CAP;
+  assert(is_pow_2(interner->cap));
+  interner->entries = intrn_entries_new();
+  intrn_entries_resize(&interner->entries, interner->cap, NULL);
 
-  for (size_t i = 0; i < interner.cap; i++) {
-    InternEntry *entry = intrn_entries_access_ptr(&interner.entries, i);
+  for (size_t i = 0; i < interner->cap; i++) {
+    InternEntry *entry = intrn_entries_access_ptr(&interner->entries, i);
     entry->is_empty = 1;
   }
 
-  interner.arena = arena;
+  interner->arena = arena;
   return interner;
 }
 
 InternedStr *get_interned_str(StringInterner *interner, uint32_t offset) {
   return (InternedStr *)(interner->arena->data + offset);
+}
+
+StringView get_interned_sv(StringInterner *interner, StringID id) {
+  InternedStr *interned = get_interned_str(interner, id);
+  return anystr_to_sv(*interned);
 }
 
 InternEntry *find_slot(StringView str, StringInterner *interner) {
@@ -74,8 +80,8 @@ void interner_resize(StringInterner *interner) {
     InternEntry *entry = intrn_entries_access_ptr(&old_entries, i);
     if (entry->is_empty)
       continue;
-    InternedStr *str = get_interned_str(interner, entry->offset);
-    InternEntry *new_entry = find_slot(anystr_to_sv(*str), interner);
+    StringView str = get_interned_sv(interner, entry->offset);
+    InternEntry *new_entry = find_slot(str, interner);
     *new_entry = *entry;
   }
 

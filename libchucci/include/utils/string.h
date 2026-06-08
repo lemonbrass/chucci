@@ -18,14 +18,17 @@ typedef struct String {
 
 
 #define cstr_to_anystr(_cstr, STR_T) (STR_T){ .cstr = _cstr, .len = strlen(_cstr) }
+#define const_cstr_to_anystr(_cstr, STR_T) (STR_T){ .cstr = _cstr, .len = sizeof(_cstr) - 1 }
 #define anystr_to_sv(str) (StringView){ .cstr = (str).cstr, .len = (str).len }
 #define anystr_to_str(str) (String){ .cstr = (str).cstr, .len = (str).len }
 #define anystr_to_sb(str) (StringBuilder){ .cstr = (str).cstr, .len = (str).len }
+#define anystr_new(T, _cstr, _len) (T){ .cstr = (_cstr), .len = (_len) }
 
-#define print_str(str) printf("%.*s", (str).len, (str).cstr)
-#define println_str(str) printf("%.*s\n", (str).len, (str).cstr)
+#define print_str(str) printf("%.*s", (int)(str).len, (str).cstr)
+#define println_str(str) printf("%.*s\n", (int)(str).len, (str).cstr)
 #define len(str) (str).len
 
+#define str_slice(str, start, end) (StringView){.cstr = (str).cstr+(start), .len = ((end) - (start))}
 #define str_eq(str1, str2) ((str1).len == (str2).len && memcmp((str1).cstr, (str2).cstr, (str1).len) == 0)
 #define str_startswith(str, ch) (assert((str).len > 0), (str).cstr[0] == ch)
 #define str_trim(str, sv_result) do {\

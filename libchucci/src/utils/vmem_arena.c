@@ -1,5 +1,6 @@
 #include "utils/vmem_arena.h"
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 
 #if defined(__unix__) || defined(__APPLE__)
@@ -17,23 +18,29 @@
 #define ALIGN_UP(n, a) (((n) + (a) - 1) & ~((a) - 1))
 #define DEFAULT_ALIGNMENT 8
 
-VMEMArena vmarena_new() {
+VMEMArena *vmarena_new(size_t cap) {
   VMEMArena arena = {0};
-  arena.cap = VMEM_ARENA_MAX_CAP;
+  arena.cap = cap;
 #if defined(__unix__) || defined(__APPLE__)
-  arena.data = mmap(NULL, VMEM_ARENA_MAX_CAP, PROT_READ | PROT_WRITE,
+  arena.data = mmap(NULL, cap, PROT_READ | PROT_WRITE,
                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #elif defined(_WIN32)
-  arena.data = VirtualAlloc(NULL, VMEM_ARENA_MAX_CAP, MEM_RESERVE | MEM_COMMIT,
-                            PAGE_READWRITE);
+  arena.data =
+      VirtualAlloc(NULL, cap, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
   assert(arena.data);
 #endif
-  return arena;
+  arena.pos += sizeof(VMEMArena);
+  *(VMEMArena *)arena.data = arena;
+  return (VMEMArena *)arena.data;
 }
 
 void *vmarena_alloc(VMEMArena *arena, size_t size) {
   arena->pos = ALIGN_UP(arena->pos, DEFAULT_ALIGNMENT);
-  assert(arena->cap - arena->pos > size && arena->data);
+#ifdef VMEM_ARENA_DEBUG
+  printf("VMEMArena allocating pos=%zu size=%zu cap=%zu remaining_cap=%zu \n",
+         arena->pos, size, arena->cap, arena->cap - arena->pos);
+#endif
+  assert(arena->cap - arena->pos >= size && arena->data);
   arena->pos += size;
   return arena->data + arena->pos - size;
 }
@@ -72,9 +79,8 @@ void vmarena_free(VMEMArena *arena) {
   if (!arena->data)
     return;
 #if defined(__unix__) || defined(__APPLE__)
-  assert(munmap(arena->data, VMEM_ARENA_MAX_CAP) != -1);
+  assert(munmap(arena->data, arena->cap) != -1);
 #elif defined(_WIN32)
   assert(VirtualFree(arena->data, 0, MEM_RELEASE) != 0);
 #endif
-  *arena = (VMEMArena){0};
 }

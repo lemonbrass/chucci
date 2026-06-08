@@ -8,14 +8,14 @@
 
 typedef struct VMEMArena {
   uint8_t *data;
-  size_t cap, pos;
+  size_t pos, cap;
 } VMEMArena;
 
 typedef struct VMEMArenaMark {
   size_t pos;
 } VMEMArenaMark;
 
-VMEMArena vmarena_new();
+VMEMArena *vmarena_new(size_t cap);
 void *vmarena_alloc(VMEMArena *arena, size_t size);
 void *vmarena_calloc(VMEMArena *arena, size_t size);
 void *vmarena_realloc(VMEMArena *arena, void *ptr, size_t old_size, size_t new_size);
