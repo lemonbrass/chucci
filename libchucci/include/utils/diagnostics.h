@@ -13,7 +13,9 @@
   X(ERR_INVALID_NUMERIC_LITERAL, "Invalid numeric literal", SL_ERROR,          \
     PHASE_LEXER)                                                               \
   X(ERR_UNTERMINATED_STRING, "Unterminated string literal", SL_ERROR,          \
-    PHASE_LEXER)
+    PHASE_LEXER)                                                               \
+  X(ERR_UNTERMINATED_MULTILINE_COMMENT, "Unterminated multiline comment",      \
+    SL_ERROR, PHASE_LEXER)
 
 #define SEVERITY_LEVEL(X)                                                      \
   X(SL_IGNORED, "ignored")                                                     \

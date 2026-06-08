@@ -79,7 +79,7 @@ void diagnostic_emit(Diagnostic *diag) {
 #undef X
   printf(": ");
   println_str(diag->base.msg);
-  printf(", initiated by %s:%d\n", diag->cfile, diag->cline);
+  printf("Initiated by %s:%d\n", diag->cfile, diag->cline);
   StringView current_line = cursor_curr_line(&diag->cursor);
   println_str(current_line);
   for (size_t i = 0; i < diag->start.col - 1; i++)

@@ -64,5 +64,6 @@ void skip_whitespace_except_newline(Cursor* cursor);
 * Returns string_view(NULL, 0) if delim not found
 */
 StringView get_till_delim(Cursor* cursor, char delim);
+#define cursor_advance_till(cursor, fn) while (fn(ch)) cursor_advance((cursor));
 
 #endif

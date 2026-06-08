@@ -6,7 +6,8 @@ jmp_buf onerror;
 
 int main() {
   CompilerCtx *ctx = compiler_new(&onerror);
-  char *source = "int x_y_haha = \"HUiHUi\n\";";
+  char *source =
+      "int // \n x_y_haha = \"HUiHUi\" /* ohhh yeahhh */; int x = 1 / 1;";
   File file = {.contents = cstr_to_anystr(source, String),
                .name = cstr_to_anystr("scratch", StringView)};
 

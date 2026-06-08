@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define current_source(ctx) (filevec_top(&(ctx)->sources))
 #define cursor(lexer) (&(lexer)->cursor)
@@ -114,9 +115,53 @@ Token lex_ident(Lexer *lexer, char ch) {
   return new_tok_ident(mark1, lexeme, id);
 }
 
+void skip_comments(Lexer *lexer, char ch) {
+  CursorMark mark1 = cursor_mark(cursor(lexer));
+  cursor_advance(cursor(lexer));
+  ch = cursor_peek(cursor(lexer));
+  // single line comment
+  if (ch == '/') {
+    while (ch != '\0' && ch != '\n') {
+      cursor_advance(cursor(lexer));
+      ch = cursor_peek(cursor(lexer));
+    }
+    return;
+  }
+  // Multi line comments
+  else if (ch == '*') {
+    while (true) {
+      if (ch == '\0') {
+        CursorMark mark2 = cursor_mark(cursor(lexer));
+        Diagnostic diag = diagnostic_new(ERR_UNTERMINATED_MULTILINE_COMMENT,
+                                         lexer->cursor, mark1, mark2);
+        diagnostic_add(lexer->ctx->engine, diag);
+        break;
+      }
+      if (ch == '*') {
+        cursor_advance(cursor(lexer));
+        ch = cursor_peek(cursor(lexer));
+        if (ch == '/') {
+          cursor_advance(cursor(lexer));
+          ch = cursor_peek(cursor(lexer));
+          break;
+        }
+      }
+      cursor_advance(cursor(lexer));
+      ch = cursor_peek(cursor(lexer));
+    }
+  }
+}
+
 Token next_token(Lexer *lexer) {
   skip_whitespace_except_newline(cursor(lexer));
   char ch = cursor_peek(cursor(lexer));
+  if (ch == '/') {
+    char next = cursor_peek_next(cursor(lexer));
+    if (next == '*' || next == '/') {
+      skip_comments(lexer, ch);
+      return next_token(lexer);
+    }
+  }
   if (ch == '\0')
     return new_tok_simple(
         get_cursor_mark(lexer),
