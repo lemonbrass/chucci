@@ -7,6 +7,7 @@
 
 struct Lexer {
   Cursor cursor;
+  size_t file_pos;
 };
 
 Lexer *lexer_new(CompilerCtx *ctx);

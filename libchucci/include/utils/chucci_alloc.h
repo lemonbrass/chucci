@@ -20,4 +20,6 @@ extern ChucciAllocInt MALLOC_ALLOC_INT;
 #define chucci_realloc(interface, ctx, ptr, old_size, new_size) interface.realloc(ctx, ptr, old_size, new_size)
 #define chucci_free(interface, ctx, ptr) interface.free(ctx, ptr)
 
+void* memdup(void* mem, size_t len);
+
 #endif

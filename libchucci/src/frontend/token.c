@@ -17,7 +17,7 @@ const char *tok_to_str[__token_kind_count] = {
             SEPARATORS(X)
 #undef X
                 "eof",
-    "error", "ident", "value", "\\n"};
+    "ident", "value"};
 #define X(a, b, c) [(unsigned char) c] = true,
 const bool is_op_table[256] = {OPERATORS(X)};
 const bool is_sep_table[256] = {SEPARATORS(X)};
@@ -25,38 +25,43 @@ const bool is_sep_table[256] = {SEPARATORS(X)};
 
 StringView token_to_str(Token *token, StringInterner *interner) {
   if (token->kind < TOK_EOF)
-    return cstr_to_anystr((char *)tok_to_str[token->kind], StringView);
+    return cstr_to_sv((char *)tok_to_str[token->kind]);
   else if (token->kind == TOK_VAL)
     return token->lexeme;
   else if (token->kind == TOK_IDENT)
     return get_interned_sv(interner, token->ident);
   else if (token->kind == SEP_NEWLINE)
-    return cstr_to_anystr("\n", StringView);
+    return const_cstr_to_sv("\n");
   else
     assert(false);
 }
 
-Token new_tok_ident(CursorMark pos, StringView lexeme, StringID name) {
+Token new_tok_ident(CursorMark pos, StringView lexeme, File *file,
+                    StringID name) {
   Token token;
   token.kind = TOK_IDENT;
   token.pos = pos;
   token.ident = name;
+  token.file = file;
   return token;
 }
 
-Token new_tok_val(CursorMark pos, StringView lexeme) {
+Token new_tok_val(CursorMark pos, StringView lexeme, File *file) {
   Token token;
   token.kind = TOK_VAL;
   token.pos = pos;
   token.lexeme = lexeme;
+  token.file = file;
   return token;
 }
 
-Token new_tok_simple(CursorMark pos, StringView lexeme, TokenKind kind) {
+Token new_tok_simple(CursorMark pos, StringView lexeme, File *file,
+                     TokenKind kind) {
   Token token;
   token.kind = kind;
   token.pos = pos;
-  token.lexeme = cstr_to_anystr((char *)tok_to_str[kind], StringView);
+  token.lexeme = cstr_to_sv((char *)tok_to_str[kind]);
+  token.file = file;
   return token;
 }
 
@@ -66,6 +71,10 @@ void print_token(Token *token, StringInterner *interner) {
          token->pos.line);
 }
 void print_token_pretty(Token *token, StringInterner *interner) {
+  if (token->kind == SEP_NEWLINE) {
+    printf("sep(\\n)");
+    return;
+  }
   switch (token->kind) {
 #define X(a, b, c)                                                             \
   case a:                                                                      \
@@ -95,9 +104,6 @@ void print_token_pretty(Token *token, StringInterner *interner) {
     (void)0; // To shut up the warning
     StringView str = token_to_str(token, interner);
     printf("ident(%.*s)", (int)str.len, str.cstr);
-    break;
-  case SEP_NEWLINE:
-    printf("sep(\\n)");
     break;
   default:
     assert(false && "UNREACHABLE");

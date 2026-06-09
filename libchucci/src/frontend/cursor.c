@@ -20,7 +20,7 @@ StringView cursor_curr_line(Cursor *cursor) {
          cursor->source.contents.cstr[end] != '\n') {
     end++;
   }
-  return str_slice(cursor->source.contents, start, end);
+  return anystr_slice(cursor->source.contents, start, end);
 }
 
 void cursor_advance_by(Cursor *cursor, size_t n) {
@@ -48,14 +48,14 @@ StringView get_till_delim(Cursor *cursor, char delim) {
          cursor->source.contents.cstr[end] != delim) {
     end++;
   }
-  return str_slice(cursor->source.contents, start, end);
+  return anystr_slice(cursor->source.contents, start, end);
 }
 
 StringView cursor_get_till_next_line(Cursor *cursor) {
   StringView sv = get_till_delim(cursor, '\n');
   if (sv.len == 0 && sv.cstr == NULL) {
-    return str_slice(cursor->source.contents, cursor->id,
-                     cursor->source.contents.len);
+    return anystr_slice(cursor->source.contents, cursor->id,
+                        cursor->source.contents.len);
   }
   return sv;
 }
@@ -138,5 +138,5 @@ void cursor_dump(Cursor *c) {
 }
 
 StringView cursor_slice(Cursor *cursor, size_t start, size_t end) {
-  return str_slice(cursor->source.contents, start, end);
+  return anystr_slice(cursor->source.contents, start, end);
 }

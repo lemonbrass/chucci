@@ -6,10 +6,11 @@ jmp_buf onerror;
 
 int main() {
   CompilerCtx *ctx = compiler_new(&onerror);
-  char *source = "int // \n x_y_haha = \"HUiHUi\" /* ohhh yeahhh */; \n int x "
-                 "= 1.1.1.1 / 1; 1.2.34.4;";
-  File file = {.contents = cstr_to_anystr(source, String),
-               .name = cstr_to_anystr("scratch", StringView)};
+  char *source =
+      "int // \n x_y_haha = \"HUiHUi\" /* ohhh yeahhh */ #; \n int x "
+      "= 1.1.1.1 / 1; 1.2.34.4;";
+  File file = {.contents = cstr_to_str(source),
+               .name = const_cstr_to_sv("scratch")};
 
   cc_add_source(ctx, file);
 

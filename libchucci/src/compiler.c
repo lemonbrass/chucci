@@ -50,6 +50,8 @@ void cc_compile(CompilerCtx *ctx) {
 }
 
 void cc_free(CompilerCtx *ctx) {
+  for (size_t i = 0; i < ctx->sources.len; i++)
+    file_free(filevec_access_ptr(&ctx->sources, i));
   interner_free(ctx->interner);
   diagnostic_engine_free(ctx->engine);
   filevec_free(&ctx->sources, &ctx->arena);

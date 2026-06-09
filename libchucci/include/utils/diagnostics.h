@@ -15,7 +15,9 @@
   X(ERR_UNTERMINATED_STRING, "Unterminated string literal", SL_ERROR,          \
     PHASE_LEXER)                                                               \
   X(ERR_UNTERMINATED_MULTILINE_COMMENT, "Unterminated multiline comment",      \
-    SL_ERROR, PHASE_LEXER)
+    SL_ERROR, PHASE_LEXER)                                                     \
+  X(ERR_UNEXPECTED_TOKEN_AFTER_OP_PREPROCESS, "Unexpected token after #",      \
+    SL_ERROR, PHASE_PREPROCESSOR)
 
 #define SEVERITY_LEVEL(X)                                                      \
   X(SL_IGNORED, "ignored")                                                     \
@@ -29,7 +31,7 @@ typedef enum DiagnosticID {
 #undef X
 } DiagnosticID;
 
-typedef enum DiagPhase { PHASE_LEXER } DiagPhase;
+typedef enum DiagPhase { PHASE_LEXER, PHASE_PREPROCESSOR } DiagPhase;
 
 typedef enum SeverityLevel {
 #define X(a, _) a,

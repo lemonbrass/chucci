@@ -12,10 +12,8 @@ VEC_IMPL(Diagnostic, DiagVec, diagvec, VMEM_ARENA_ALLOC_INT)
 
 DiagnosticBase id_to_diagnostic[] = {
 #define X(_id, _msg, _sl, _ph)                                                 \
-  (DiagnosticBase){.id = _id,                                                  \
-                   .msg = const_cstr_to_anystr(_msg, StringView),              \
-                   .level = _sl,                                               \
-                   .phase = _ph},
+  (DiagnosticBase){                                                            \
+      .id = _id, .msg = const_cstr_to_sv(_msg), .level = _sl, .phase = _ph},
     DIAGNOSTICS(X)
 #undef X
 };
@@ -70,7 +68,7 @@ void subdiagnostic_add(DiagnosticEngine *engine, Diagnostic *diag,
 
 // TODO: Multi-line errors
 void diagnostic_emit(Diagnostic *diag) {
-  print_str(diag->cursor.source.name);
+  anystr_print(diag->cursor.source.name);
   printf("(%zu:%zu): ", diag->cursor.line, diag->cursor.col);
 #define X(sl, name)                                                            \
   if (diag->base.level == sl)                                                  \
@@ -78,13 +76,13 @@ void diagnostic_emit(Diagnostic *diag) {
   SEVERITY_LEVEL(X)
 #undef X
   printf(": ");
-  println_str(diag->base.msg);
+  anystr_println(diag->base.msg);
   printf("Initiated by %s:%d\n", diag->cfile, diag->cline);
   StringView current_line = cursor_curr_line(&diag->cursor);
-  println_str(current_line);
+  anystr_println(current_line);
   for (size_t i = 0; i < diag->start.col - 1; i++)
     putchar(' ');
-  for (size_t i = diag->start.id; i < diag->end.id; i++)
+  for (size_t i = diag->start.id; i <= diag->end.id; i++)
     putchar('^');
   putchar('\n');
   vec_foreach(Diagnostic, &diag->children, _idx, diagnostic, {

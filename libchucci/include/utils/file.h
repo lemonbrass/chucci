@@ -11,4 +11,6 @@ typedef struct File {
 
 SMALLVEC_DEF(File, FileVec, filevec);
 
+void file_free(File *file);
+
 #endif

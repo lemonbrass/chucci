@@ -13,7 +13,7 @@
 #define wrap_around(num, cap) (num & (cap - 1))
 #define entry_sv_eq(interner, entry, sv, ch1)                                  \
   (entry->char1 == ch1 &&                                                      \
-   str_eq(*get_interned_str(interner, entry->offset), sv))
+   anystr_eq(*get_interned_str(interner, entry->offset), sv))
 
 VEC_IMPL(InternEntry, InternEntryVec, intrn_entries, MALLOC_ALLOC_INT)
 

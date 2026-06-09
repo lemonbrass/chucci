@@ -17,6 +17,12 @@ static void no_op(void *_a, void *_b) {
   (void)_b;
 }
 
+void *memdup(void *mem, size_t len) {
+  void *new_mem = malloc(len);
+  memcpy(new_mem, mem, len);
+  return new_mem;
+}
+
 ChucciAllocInt MALLOC_ALLOC_INT = (ChucciAllocInt){
     .alloc = _malloc, .calloc = _calloc, .realloc = _realloc, .free = _free};
 

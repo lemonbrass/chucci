@@ -3,6 +3,7 @@
 #include "frontend/cursor.h"
 #include "frontend/token.h"
 #include "utils/diagnostics.h"
+#include "utils/file.h"
 #include "utils/string.h"
 #include "utils/string_interner.h"
 #include "utils/vmem_arena.h"
@@ -10,7 +11,10 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#define current_source(ctx) (filevec_top(&(ctx)->sources))
+#define current_source(lexer, ctx)                                             \
+  (filevec_access(&(ctx)->sources, lexer->file_pos))
+#define current_source_ptr(lexer, ctx)                                         \
+  (filevec_access_ptr(&(ctx)->sources, lexer->file_pos))
 #define cursor(lexer) (&(lexer)->cursor)
 #define get_cursor_mark(lexer) cursor_mark(cursor(lexer))
 
@@ -18,20 +22,20 @@ StringID keyword_to_id[__token_kind_count];
 
 Lexer *lexer_new(CompilerCtx *ctx) {
 #define X(kind, str)                                                           \
-  keyword_to_id[kind] = intern(cstr_to_anystr(str, StringView), ctx->interner);
+  keyword_to_id[kind] = intern(cstr_to_sv(str), ctx->interner);
   KEYWORDS(X)
 #undef X
   Lexer *lexer = vmarena_calloc(ctx->arena, sizeof(Lexer));
-  lexer->cursor = cursor_new(current_source(ctx));
+  lexer->file_pos = 0;
+  lexer->cursor = cursor_new(current_source(lexer, ctx));
   return lexer;
 }
 
-Token lex_op_sep(Lexer *lexer, char ch) {
+Token lex_op_sep(Lexer *lexer, CompilerCtx *ctx, char ch) {
 #define X(kind, str, ch1)                                                      \
-  if (ch1 == ch &&                                                             \
-      cursor_match_str(cursor(lexer), cstr_to_anystr(str, StringView)))        \
-    return new_tok_simple(get_cursor_mark(lexer),                              \
-                          anystr_new(StringView, str, strlen(str)), kind);
+  if (ch1 == ch && cursor_match_str(cursor(lexer), cstr_to_sv(str)))           \
+    return new_tok_simple(get_cursor_mark(lexer), const_cstr_to_sv(str),       \
+                          current_source_ptr(lexer, ctx), kind);
   OPERATORS(X)
   SEPARATORS(X)
 #undef X
@@ -61,7 +65,7 @@ Token lex_num(Lexer *lexer, CompilerCtx *ctx) {
   CursorMark mark2 = get_cursor_mark(lexer);
 
   StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  return new_tok_val(mark1, lexeme);
+  return new_tok_val(mark1, lexeme, current_source_ptr(lexer, ctx));
 }
 
 Token lex_str(Lexer *lexer, CompilerCtx *ctx) {
@@ -90,7 +94,7 @@ Token lex_str(Lexer *lexer, CompilerCtx *ctx) {
   CursorMark mark2 = get_cursor_mark(lexer);
 
   StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  return new_tok_val(mark1, lexeme);
+  return new_tok_val(mark1, lexeme, current_source_ptr(lexer, ctx));
 }
 
 Token lex_ident(Lexer *lexer, CompilerCtx *ctx, char ch) {
@@ -108,11 +112,12 @@ Token lex_ident(Lexer *lexer, CompilerCtx *ctx, char ch) {
 
 #define X(kind, _)                                                             \
   if (keyword_to_id[kind] == id)                                               \
-    return new_tok_simple(get_cursor_mark(lexer), lexeme, kind);
+    return new_tok_simple(get_cursor_mark(lexer), lexeme,                      \
+                          current_source_ptr(lexer, ctx), kind);
   KEYWORDS(X)
 #undef X
 
-  return new_tok_ident(mark1, lexeme, id);
+  return new_tok_ident(mark1, lexeme, current_source_ptr(lexer, ctx), id);
 }
 
 void skip_comments(Lexer *lexer, CompilerCtx *ctx, char ch) {
@@ -162,17 +167,24 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
       return lex_next_token(lexer, ctx);
     }
   }
-  if (ch == '\0')
+  if (ch == '\0') {
+    if (ctx->sources.len > 1) {
+      file_free(filevec_top_ptr(&ctx->sources));
+      filevec_pop(&ctx->sources);
+      lexer->cursor = cursor_new(current_source(lexer, ctx));
+      return lex_next_token(lexer, ctx);
+    }
     return new_tok_simple(
         get_cursor_mark(lexer),
         cursor_slice(cursor(lexer), lexer->cursor.id, lexer->cursor.id + 1),
-        TOK_EOF);
+        current_source_ptr(lexer, ctx), TOK_EOF);
+  }
   if (ch == '\n') {
     cursor_advance(cursor(lexer));
     return new_tok_simple(
         get_cursor_mark(lexer),
         cursor_slice(cursor(lexer), lexer->cursor.id, lexer->cursor.id + 1),
-        SEP_NEWLINE);
+        current_source_ptr(lexer, ctx), SEP_NEWLINE);
   }
   if (isalpha((unsigned char)ch) || ch == '_')
     return lex_ident(lexer, ctx, ch);
@@ -181,6 +193,6 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
   if (isdigit(ch))
     return lex_num(lexer, ctx);
   if (is_op(ch) || is_sep(ch))
-    return lex_op_sep(lexer, ch);
+    return lex_op_sep(lexer, ctx, ch);
   assert(false);
 }
