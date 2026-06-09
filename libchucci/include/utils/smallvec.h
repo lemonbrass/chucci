@@ -41,8 +41,6 @@ T prefix##_top(name* vec);\
 T prefix##_access(name* vec, size_t i);\
 T* prefix##_top_ptr(name* vec);\
 T* prefix##_access_ptr(name* vec, size_t i);\
-size_t prefix##_len(name* vec);\
-size_t prefix##_cap(name* vec);\
 void prefix##_push(name* vec, T val, void* ctx);\
 
 #define SMALLVEC_DEF_WITH_FIELDS(T, name, prefix, fields)\
@@ -66,8 +64,6 @@ T prefix##_top(name* vec);\
 T prefix##_access(name* vec, size_t i);\
 T* prefix##_top_ptr(name* vec);\
 T* prefix##_access_ptr(name* vec, size_t i);\
-size_t prefix##_len(name* vec);\
-size_t prefix##_cap(name* vec);\
 void prefix##_push(name* vec, T val, void* ctx);\
 void prefix##_reset(name* vec);\
 

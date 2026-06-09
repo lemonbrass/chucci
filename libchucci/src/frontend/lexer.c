@@ -9,7 +9,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #define current_source(ctx) (filevec_top(&(ctx)->sources))
 #define cursor(lexer) (&(lexer)->cursor)
@@ -23,7 +22,6 @@ Lexer *lexer_new(CompilerCtx *ctx) {
   KEYWORDS(X)
 #undef X
   Lexer *lexer = vmarena_calloc(ctx->arena, sizeof(Lexer));
-  lexer->ctx = ctx;
   lexer->cursor = cursor_new(current_source(ctx));
   return lexer;
 }
@@ -40,23 +38,25 @@ Token lex_op_sep(Lexer *lexer, char ch) {
   assert(false);
 }
 
-Token lex_num(Lexer *lexer) {
+Token lex_num(Lexer *lexer, CompilerCtx *ctx) {
   CursorMark mark1 = get_cursor_mark(lexer);
   char ch = cursor_advance(cursor(lexer));
+  ch = cursor_peek(cursor(lexer));
   bool is_float = false;
-  while (ch = cursor_peek(cursor(lexer)), true) {
-    if (!isdigit(ch) && ch != '.')
+  while (true) {
+    char _ch = cursor_peek(cursor(lexer));
+    if (!isdigit(_ch) && _ch != '.')
       break;
     if (ch == '.') {
       if (is_float) {
         CursorMark mark2 = cursor_mark(cursor(lexer));
         Diagnostic diag = diagnostic_new(ERR_INVALID_NUMERIC_LITERAL,
                                          lexer->cursor, mark1, mark2);
-        diagnostic_add(lexer->ctx->engine, diag);
+        diagnostic_add(ctx->engine, diag);
       }
       is_float = true;
     }
-    cursor_advance(cursor(lexer));
+    ch = cursor_advance(cursor(lexer));
   }
   CursorMark mark2 = get_cursor_mark(lexer);
 
@@ -64,7 +64,7 @@ Token lex_num(Lexer *lexer) {
   return new_tok_val(mark1, lexeme);
 }
 
-Token lex_str(Lexer *lexer) {
+Token lex_str(Lexer *lexer, CompilerCtx *ctx) {
   CursorMark mark1 = get_cursor_mark(lexer);
   char ch = cursor_advance(cursor(lexer));
   while (true) {
@@ -82,7 +82,7 @@ Token lex_str(Lexer *lexer) {
       CursorMark mark2 = cursor_mark(cursor(lexer));
       Diagnostic diag =
           diagnostic_new(ERR_UNTERMINATED_STRING, lexer->cursor, mark1, mark2);
-      diagnostic_add(lexer->ctx->engine, diag);
+      diagnostic_add(ctx->engine, diag);
       break;
     }
     cursor_advance(cursor(lexer));
@@ -93,7 +93,7 @@ Token lex_str(Lexer *lexer) {
   return new_tok_val(mark1, lexeme);
 }
 
-Token lex_ident(Lexer *lexer, char ch) {
+Token lex_ident(Lexer *lexer, CompilerCtx *ctx, char ch) {
   CursorMark mark1 = get_cursor_mark(lexer);
   while (true) {
     ch = cursor_peek(cursor(lexer));
@@ -104,7 +104,7 @@ Token lex_ident(Lexer *lexer, char ch) {
   CursorMark mark2 = get_cursor_mark(lexer);
 
   StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  StringID id = intern(lexeme, lexer->ctx->interner);
+  StringID id = intern(lexeme, ctx->interner);
 
 #define X(kind, _)                                                             \
   if (keyword_to_id[kind] == id)                                               \
@@ -115,7 +115,7 @@ Token lex_ident(Lexer *lexer, char ch) {
   return new_tok_ident(mark1, lexeme, id);
 }
 
-void skip_comments(Lexer *lexer, char ch) {
+void skip_comments(Lexer *lexer, CompilerCtx *ctx, char ch) {
   CursorMark mark1 = cursor_mark(cursor(lexer));
   cursor_advance(cursor(lexer));
   ch = cursor_peek(cursor(lexer));
@@ -134,7 +134,7 @@ void skip_comments(Lexer *lexer, char ch) {
         CursorMark mark2 = cursor_mark(cursor(lexer));
         Diagnostic diag = diagnostic_new(ERR_UNTERMINATED_MULTILINE_COMMENT,
                                          lexer->cursor, mark1, mark2);
-        diagnostic_add(lexer->ctx->engine, diag);
+        diagnostic_add(ctx->engine, diag);
         break;
       }
       if (ch == '*') {
@@ -152,14 +152,14 @@ void skip_comments(Lexer *lexer, char ch) {
   }
 }
 
-Token next_token(Lexer *lexer) {
+Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
   skip_whitespace_except_newline(cursor(lexer));
   char ch = cursor_peek(cursor(lexer));
   if (ch == '/') {
     char next = cursor_peek_next(cursor(lexer));
     if (next == '*' || next == '/') {
-      skip_comments(lexer, ch);
-      return next_token(lexer);
+      skip_comments(lexer, ctx, ch);
+      return lex_next_token(lexer, ctx);
     }
   }
   if (ch == '\0')
@@ -175,11 +175,11 @@ Token next_token(Lexer *lexer) {
         SEP_NEWLINE);
   }
   if (isalpha((unsigned char)ch) || ch == '_')
-    return lex_ident(lexer, ch);
+    return lex_ident(lexer, ctx, ch);
   if (ch == '\"')
-    return lex_str(lexer);
+    return lex_str(lexer, ctx);
   if (isdigit(ch))
-    return lex_num(lexer);
+    return lex_num(lexer, ctx);
   if (is_op(ch) || is_sep(ch))
     return lex_op_sep(lexer, ch);
   assert(false);

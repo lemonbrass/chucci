@@ -7,11 +7,10 @@
 
 struct Lexer {
   Cursor cursor;
-  CompilerCtx *ctx;
 };
 
 Lexer *lexer_new(CompilerCtx *ctx);
-Token next_token(Lexer *lexer);
+Token lex_next_token(Lexer *lexer, CompilerCtx *ctx);
 
 
 #endif

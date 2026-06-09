@@ -12,6 +12,7 @@
 SMALLVEC_DEF(String, StringVec, stringvec);
 
 typedef struct Lexer Lexer;
+typedef struct Preprocessor Preprocessor;
 
 typedef struct {
   FileVec sources;
@@ -20,6 +21,7 @@ typedef struct {
   StringInterner *interner;
   DiagnosticEngine *engine;
   Lexer* lexer;
+  Preprocessor* preprocessor;
   jmp_buf *onerror;
 } CompilerCtx;
 

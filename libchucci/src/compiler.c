@@ -1,5 +1,6 @@
 #include "compiler.h"
 #include "frontend/lexer.h"
+#include "frontend/preprocessor.h"
 #include "frontend/token.h"
 #include "utils/chucci_alloc.h"
 #include "utils/diagnostics.h"
@@ -26,15 +27,18 @@ void cc_add_source(CompilerCtx *ctx, File source) {
   filevec_push(&ctx->sources, source, ctx->arena);
 }
 
-void cc_preamble(CompilerCtx *ctx) { ctx->lexer = lexer_new(ctx); }
+void cc_preamble(CompilerCtx *ctx) {
+  assert(ctx->sources.len > 0);
+  ctx->lexer = lexer_new(ctx);
+  ctx->preprocessor = pp_new(ctx, ctx->lexer);
+}
 
 void cc_compile(CompilerCtx *ctx) {
-  assert(filevec_len(&ctx->sources) > 0);
-  assert(ctx->arena->data);
+  assert(ctx->sources.len > 0);
   // Testing code for now, till compiler is complete
   Token token = {0};
   while (token.kind != TOK_EOF) {
-    token = next_token(ctx->lexer);
+    token = pp_next_token(ctx->preprocessor, ctx);
     printf("Token: ");
     print_token_pretty(&token, ctx->interner);
     printf("\n");

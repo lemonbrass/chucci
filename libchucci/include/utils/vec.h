@@ -29,8 +29,6 @@ T prefix##_top(name* vec);\
 T prefix##_access(name* vec, size_t i);\
 T* prefix##_top_ptr(name* vec);\
 T* prefix##_access_ptr(name* vec, size_t i);\
-size_t prefix##_len(name* vec);\
-size_t prefix##_cap(name* vec);\
 void prefix##_push(name* vec, T val, void* ctx);\
 void prefix##_reset(name* vec);
 
@@ -77,12 +75,6 @@ void prefix##_push(name* vec, T val, void* ctx) {\
   if (vec->len+1 > vec->cap)\
     vec->cap ? prefix##_resize(vec, vec->cap * VEC_RESIZE_RATIO, ctx) : prefix##_resize(vec, VEC_DEFAULT_CAP, ctx);\
   vec->data[vec->len++] = val;\
-}\
-size_t prefix##_cap(name* vec) {\
-  return vec->cap;\
-}\
-size_t prefix##_len(name* vec) {\
-  return vec->len;\
 }\
 T prefix##_access(name* vec, size_t i) {\
   return vec->data[i];\

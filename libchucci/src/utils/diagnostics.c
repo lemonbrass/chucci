@@ -94,7 +94,7 @@ void diagnostic_emit(Diagnostic *diag) {
 }
 
 void diagnostics_emit(DiagnosticEngine *engine) {
-  if (diagvec_len(&engine->diagnostics) == 0)
+  if (engine->diagnostics.len == 0)
     return;
   vec_foreach(Diagnostic, &engine->diagnostics, _idx, diagnostic,
               { diagnostic_emit(&diagnostic); });
@@ -107,5 +107,5 @@ void diagnostic_add(DiagnosticEngine *engine, Diagnostic diag) {
 }
 
 bool has_fatal_diagnostics(DiagnosticEngine *engine) {
-  return engine->fatal || diagvec_len(&engine->diagnostics) > MAX_DIAGNOSTICS;
+  return engine->fatal || engine->diagnostics.len > MAX_DIAGNOSTICS;
 }
