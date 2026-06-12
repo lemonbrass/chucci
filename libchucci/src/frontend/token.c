@@ -23,54 +23,35 @@ const bool is_op_table[256] = {OPERATORS(X)};
 const bool is_sep_table[256] = {SEPARATORS(X)};
 #undef X
 
-StringView token_to_str(Token *token, StringInterner *interner) {
-  if (token->kind < TOK_EOF)
-    return cstr_to_sv((char *)tok_to_str[token->kind]);
-  else if (token->kind == TOK_VAL)
-    return token->lexeme;
-  else if (token->kind == TOK_IDENT)
-    return get_interned_sv(interner, token->ident);
-  else if (token->kind == SEP_NEWLINE)
-    return const_cstr_to_sv("\n");
-  else
-    assert(false);
-}
+StringView token_to_str(Token *token) { return span_to_sv(token->span); }
 
-Token new_tok_ident(CursorMark pos, StringView lexeme, File *file,
-                    StringID name) {
-  Token token;
+Token new_tok_ident(Span span, StringID name) {
+  Token token = {0};
   token.kind = TOK_IDENT;
-  token.pos = pos;
   token.ident = name;
-  token.file = file;
+  token.span = span;
   return token;
 }
 
-Token new_tok_val(CursorMark pos, StringView lexeme, File *file) {
-  Token token;
+Token new_tok_val(Span span) {
+  Token token = {0};
   token.kind = TOK_VAL;
-  token.pos = pos;
-  token.lexeme = lexeme;
-  token.file = file;
+  token.span = span;
   return token;
 }
 
-Token new_tok_simple(CursorMark pos, StringView lexeme, File *file,
-                     TokenKind kind) {
+Token new_tok_simple(Span span, TokenKind kind) {
   Token token;
   token.kind = kind;
-  token.pos = pos;
-  token.lexeme = cstr_to_sv((char *)tok_to_str[kind]);
-  token.file = file;
+  token.span = span;
   return token;
 }
 
-void print_token(Token *token, StringInterner *interner) {
-  StringView str = token_to_str(token, interner);
-  printf("%.*s at (%zu, %zu)", (int)str.len, str.cstr, token->pos.col,
-         token->pos.line);
+void print_token(Token *token) {
+  StringView str = token_to_str(token);
+  anystr_print(str);
 }
-void print_token_pretty(Token *token, StringInterner *interner) {
+void print_token_pretty(Token *token) {
   if (token->kind == SEP_NEWLINE) {
     printf("sep(\\n)");
     return;
@@ -98,11 +79,13 @@ void print_token_pretty(Token *token, StringInterner *interner) {
     printf("eof");
     break;
   case TOK_VAL:
-    printf("val(%.*s)", (int)token->lexeme.len, token->lexeme.cstr);
+    printf("val(");
+    anystr_print(token_to_str(token));
+    printf(")");
     break;
   case TOK_IDENT:
     (void)0; // To shut up the warning
-    StringView str = token_to_str(token, interner);
+    StringView str = token_to_str(token);
     printf("ident(%.*s)", (int)str.len, str.cstr);
     break;
   default:

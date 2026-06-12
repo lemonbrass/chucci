@@ -1,6 +1,7 @@
 #ifndef __STRING_INTERNER_H
 #define __STRING_INTERNER_H
 
+#include "utils/smallvec.h"
 #include "utils/string.h"
 #include "utils/vec.h"
 #include "utils/vmem_arena.h"
@@ -9,6 +10,7 @@
 #define DEFAULT_INTERNER_RESIZE_RATIO 0.8
 #define DEFAULT_STRING_INTERNER_CAP 1024
 typedef uint32_t StringID;
+SMALLVEC_DEF(StringID, StringIDVec, stridvec, VMEM_ARENA_ALLOC_INT)
 
 
 typedef struct InternedStr {
@@ -27,7 +29,7 @@ typedef struct InternEntry {
   uint32_t is_empty : 1;
 } InternEntry;
 
-VEC_DEF(InternEntry, InternEntryVec, intrn_entries)
+VEC_DEF(InternEntry, InternEntryVec, intrn_entries, VMEM_ARENA_ALLOC_INT)
 
 typedef struct StringInterner {
   InternEntryVec entries;

@@ -16,6 +16,7 @@
    anystr_eq(*get_interned_str(interner, entry->offset), sv))
 
 VEC_IMPL(InternEntry, InternEntryVec, intrn_entries, MALLOC_ALLOC_INT)
+SMALLVEC_IMPL(StringID, StringIDVec, stridvec, VMEM_ARENA_ALLOC_INT)
 
 StringInterner *interner_new(VMEMArena *arena) {
   StringInterner *interner = vmarena_alloc(arena, sizeof(StringInterner));

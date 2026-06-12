@@ -2,10 +2,14 @@
 #define __PREPROCESSOR_H
 
 #include "compiler.h"
+#include "frontend/pp_macro.h"
 #include "frontend/token_stream.h"
+
+// typedef struct MacroDef MacroDef;
 
 
 struct Preprocessor {
+  MacroDefMap macros;
   TokenStreamStack streams;
 };
 

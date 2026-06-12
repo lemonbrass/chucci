@@ -7,11 +7,9 @@
 #include <utils/string.h>
 #include <utils/string_interner.h>
 
-extern const char *op_to_str[];
-extern const char *sep_to_str[];
-extern const char *tok_to_str[];
 extern const bool is_op_table[256];
 extern const bool is_sep_table[256];
+extern const char *tok_to_str[];
 
 #define is_op(ch) (is_op_table[ch])
 #define is_sep(ch) (is_sep_table[ch])
@@ -19,7 +17,7 @@ extern const bool is_sep_table[256];
   ((Cursor){.id = (tok).pos.id,                                                \
             .line = (tok).pos.line,                                            \
             .col = (tok).pos.col,                                              \
-            .source = *(tok).file})
+            .source = (tok).file})
 
 #define OPERATORS(X)                                                           \
   X(OP_SHL_EQ, "<<=", '<')                                                     \
@@ -123,32 +121,27 @@ typedef enum TokenKind {
 #define X(a, b, c) a,
           SEPARATORS(X)
 #undef X
-  TOK_EOF,
+              TOK_EOF,
   TOK_IDENT, // Variable/Function/... names
   TOK_VAL,   // String literals or numerical values
   __token_kind_count,
 } TokenKind;
 
 typedef struct {
-  CursorMark pos;
-  // StringView of the token in actual source
-  StringView lexeme;
+  Span span;
   // If token is an identifier, we intern it
   // and store the identifier StringID.
   // THIS IS AN OPTIONAL value
   StringID ident;
   TokenKind kind;
-  const File *file;
 } Token;
 
-#define new_eof_token(p) ((Token){.kind = TOK_EOF, .pos = p, .len = 1})
+Token new_tok_ident(Span span, StringID ident);
+Token new_tok_val(Span span);
+Token new_tok_simple(Span, TokenKind kind);
 
-Token new_tok_ident(CursorMark pos, StringView lexeme, File *file,
-                    StringID ident);
-Token new_tok_val(CursorMark pos, StringView lexeme, File *file);
-Token new_tok_simple(CursorMark pos, StringView lexeme, File *file,
-                     TokenKind kind);
-
-void print_token(Token *token, StringInterner *interner);
-void print_token_pretty(Token *token, StringInterner *interner);
+void print_token(Token *token);
+void print_token_pretty(Token *token);
+CursorMark token_start_pos(Token token);
+CursorMark token_end_pos(Token token);
 #endif

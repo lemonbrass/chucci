@@ -32,7 +32,7 @@ T* prefix##_access_ptr(name* vec, size_t i);\
 void prefix##_push(name* vec, T val, void* ctx);\
 void prefix##_reset(name* vec);
 
-#define VEC_DEF(T, name, prefix)\
+#define VEC_DEF(T, name, prefix, alloc_int)\
 typedef struct name {\
   T* data;\
   size_t len, cap;\

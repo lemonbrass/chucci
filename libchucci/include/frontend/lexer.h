@@ -12,6 +12,7 @@ struct Lexer {
 
 Lexer *lexer_new(CompilerCtx *ctx);
 Token lex_next_token(Lexer *lexer, CompilerCtx *ctx);
+Token lex_peek_token(Lexer *lexer, CompilerCtx *ctx);
 
 
 #endif

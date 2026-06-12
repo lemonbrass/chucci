@@ -23,6 +23,11 @@ void *memdup(void *mem, size_t len) {
   return new_mem;
 }
 
+void *__vmarena_realloc(VMEMArena *arena, void *ptr, size_t old_size,
+                        size_t size) {
+  return vmarena_realloc(arena, ptr, old_size, size);
+}
+
 ChucciAllocInt MALLOC_ALLOC_INT = (ChucciAllocInt){
     .alloc = _malloc, .calloc = _calloc, .realloc = _realloc, .free = _free};
 
@@ -33,7 +38,7 @@ ChucciAllocInt CHNK_ARENA_ALLOC_INT =
                      .calloc = (void *)chnk_arena_calloc};
 
 ChucciAllocInt VMEM_ARENA_ALLOC_INT =
-    (ChucciAllocInt){.alloc = (void *)vmarena_alloc,
+    (ChucciAllocInt){.alloc = (void *)_vmarena_alloc,
                      .free = no_op,
-                     .realloc = (void *)vmarena_realloc,
-                     .calloc = (void *)vmarena_calloc};
+                     .realloc = (void *)__vmarena_realloc,
+                     .calloc = (void *)_vmarena_calloc};

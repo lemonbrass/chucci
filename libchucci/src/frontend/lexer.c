@@ -12,7 +12,7 @@
 #include <stdbool.h>
 
 #define current_source(lexer, ctx)                                             \
-  (filevec_access(&(ctx)->sources, lexer->file_pos))
+  (filevec_access_ptr(&(ctx)->sources, lexer->file_pos))
 #define current_source_ptr(lexer, ctx)                                         \
   (filevec_access_ptr(&(ctx)->sources, lexer->file_pos))
 #define cursor(lexer) (&(lexer)->cursor)
@@ -34,8 +34,7 @@ Lexer *lexer_new(CompilerCtx *ctx) {
 Token lex_op_sep(Lexer *lexer, CompilerCtx *ctx, char ch) {
 #define X(kind, str, ch1)                                                      \
   if (ch1 == ch && cursor_match_str(cursor(lexer), cstr_to_sv(str)))           \
-    return new_tok_simple(get_cursor_mark(lexer), const_cstr_to_sv(str),       \
-                          current_source_ptr(lexer, ctx), kind);
+    return new_tok_simple(span_from_cursor(cursor(lexer), 1), kind);
   OPERATORS(X)
   SEPARATORS(X)
 #undef X
@@ -54,9 +53,8 @@ Token lex_num(Lexer *lexer, CompilerCtx *ctx) {
     if (ch == '.') {
       if (is_float) {
         CursorMark mark2 = cursor_mark(cursor(lexer));
-        Diagnostic diag = diagnostic_new(ERR_INVALID_NUMERIC_LITERAL,
-                                         lexer->cursor, mark1, mark2);
-        diagnostic_add(ctx->engine, diag);
+        diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
+                       ERR_INVALID_NUMERIC_LITERAL);
       }
       is_float = true;
     }
@@ -65,7 +63,7 @@ Token lex_num(Lexer *lexer, CompilerCtx *ctx) {
   CursorMark mark2 = get_cursor_mark(lexer);
 
   StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  return new_tok_val(mark1, lexeme, current_source_ptr(lexer, ctx));
+  return new_tok_val(span_from_mark(cursor(lexer), mark1, mark2));
 }
 
 Token lex_str(Lexer *lexer, CompilerCtx *ctx) {
@@ -84,17 +82,15 @@ Token lex_str(Lexer *lexer, CompilerCtx *ctx) {
     }
     if (ch == '\0' || ch == '\n') {
       CursorMark mark2 = cursor_mark(cursor(lexer));
-      Diagnostic diag =
-          diagnostic_new(ERR_UNTERMINATED_STRING, lexer->cursor, mark1, mark2);
-      diagnostic_add(ctx->engine, diag);
+      diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
+                     ERR_UNTERMINATED_STRING);
       break;
     }
     cursor_advance(cursor(lexer));
   }
   CursorMark mark2 = get_cursor_mark(lexer);
 
-  StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
-  return new_tok_val(mark1, lexeme, current_source_ptr(lexer, ctx));
+  return new_tok_val(span_from_mark(cursor(lexer), mark1, mark2));
 }
 
 Token lex_ident(Lexer *lexer, CompilerCtx *ctx, char ch) {
@@ -110,14 +106,14 @@ Token lex_ident(Lexer *lexer, CompilerCtx *ctx, char ch) {
   StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
   StringID id = intern(lexeme, ctx->interner);
 
-#define X(kind, _)                                                             \
+#define X(kind, str)                                                           \
   if (keyword_to_id[kind] == id)                                               \
-    return new_tok_simple(get_cursor_mark(lexer), lexeme,                      \
-                          current_source_ptr(lexer, ctx), kind);
+    return new_tok_simple(span_from_cursor(cursor(lexer), sizeof(str) - 1),    \
+                          kind);
   KEYWORDS(X)
 #undef X
 
-  return new_tok_ident(mark1, lexeme, current_source_ptr(lexer, ctx), id);
+  return new_tok_ident(span_from_mark(cursor(lexer), mark1, mark2), id);
 }
 
 void skip_comments(Lexer *lexer, CompilerCtx *ctx, char ch) {
@@ -137,9 +133,8 @@ void skip_comments(Lexer *lexer, CompilerCtx *ctx, char ch) {
     while (true) {
       if (ch == '\0') {
         CursorMark mark2 = cursor_mark(cursor(lexer));
-        Diagnostic diag = diagnostic_new(ERR_UNTERMINATED_MULTILINE_COMMENT,
-                                         lexer->cursor, mark1, mark2);
-        diagnostic_add(ctx->engine, diag);
+        diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
+                       ERR_UNTERMINATED_MULTILINE_COMMENT);
         break;
       }
       if (ch == '*') {
@@ -174,17 +169,16 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
       lexer->cursor = cursor_new(current_source(lexer, ctx));
       return lex_next_token(lexer, ctx);
     }
-    return new_tok_simple(
-        get_cursor_mark(lexer),
-        cursor_slice(cursor(lexer), lexer->cursor.id, lexer->cursor.id + 1),
-        current_source_ptr(lexer, ctx), TOK_EOF);
+    return new_tok_simple(span_from_cursor(cursor(lexer), 1), TOK_EOF);
+  }
+  if (ch == '\\' && cursor_peek_next(cursor(lexer))) {
+    cursor_advance(cursor(lexer)); // skip '\'
+    cursor_advance(cursor(lexer)); // skip '\n'
+    return lex_next_token(lexer, ctx);
   }
   if (ch == '\n') {
     cursor_advance(cursor(lexer));
-    return new_tok_simple(
-        get_cursor_mark(lexer),
-        cursor_slice(cursor(lexer), lexer->cursor.id, lexer->cursor.id + 1),
-        current_source_ptr(lexer, ctx), SEP_NEWLINE);
+    return new_tok_simple(span_from_cursor(cursor(lexer), 1), SEP_NEWLINE);
   }
   if (isalpha((unsigned char)ch) || ch == '_')
     return lex_ident(lexer, ctx, ch);
@@ -195,4 +189,12 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
   if (is_op(ch) || is_sep(ch))
     return lex_op_sep(lexer, ctx, ch);
   assert(false);
+}
+
+Token lex_peek_token(Lexer *lexer, CompilerCtx *ctx) {
+  Cursor mark = *cursor(lexer);
+  Token token = lex_next_token(lexer, ctx);
+  assert(anystr_eq(token.span.source->name, mark.source->name));
+  *cursor(lexer) = mark;
+  return token;
 }

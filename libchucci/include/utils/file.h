@@ -9,7 +9,7 @@ typedef struct File {
   StringView name;
 } File;
 
-SMALLVEC_DEF(File, FileVec, filevec);
+SMALLVEC_DEF(File, FileVec, filevec, VMEM_ARENA_ALLOC_INT);
 
 void file_free(File *file);
 

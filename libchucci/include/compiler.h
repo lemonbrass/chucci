@@ -9,7 +9,7 @@
 #include "utils/vmem_arena.h"
 #include <setjmp.h>
 
-SMALLVEC_DEF(String, StringVec, stringvec);
+SMALLVEC_DEF(String, StringVec, stringvec, VMEM_ARENA_ALLOC_INT);
 
 typedef struct Lexer Lexer;
 typedef struct Preprocessor Preprocessor;

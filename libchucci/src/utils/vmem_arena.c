@@ -34,32 +34,28 @@ VMEMArena *vmarena_new(size_t cap) {
   return (VMEMArena *)arena.data;
 }
 
-void *vmarena_alloc(VMEMArena *arena, size_t size) {
+void *_vmarena_alloc(VMEMArena *arena, size_t size) {
   arena->pos = ALIGN_UP(arena->pos, DEFAULT_ALIGNMENT);
-#ifdef VMEM_ARENA_DEBUG
-  printf("VMEMArena allocating pos=%zu size=%zu cap=%zu remaining_cap=%zu \n",
-         arena->pos, size, arena->cap, arena->cap - arena->pos);
-#endif
   assert(arena->cap - arena->pos >= size && arena->data);
   arena->pos += size;
   return arena->data + arena->pos - size;
 }
 
-void *vmarena_calloc(VMEMArena *arena, size_t size) {
-  void *ptr = vmarena_alloc(arena, size);
+void *_vmarena_calloc(VMEMArena *arena, size_t size) {
+  void *ptr = _vmarena_alloc(arena, size);
   memset(ptr, 0, size);
   return ptr;
 }
 
-void *vmarena_realloc(VMEMArena *arena, void *ptr, size_t old_size,
-                      size_t new_size) {
+void *_vmarena_realloc(VMEMArena *arena, void *ptr, size_t old_size,
+                       size_t new_size) {
   if (old_size >= new_size)
     return ptr;
   else if (arena->data + arena->pos == ptr + old_size) {
     arena->pos += new_size - old_size;
     return ptr;
   } else {
-    void *new_ptr = vmarena_alloc(arena, new_size);
+    void *new_ptr = _vmarena_alloc(arena, new_size);
     memcpy(new_ptr, ptr, old_size);
     return new_ptr;
   }

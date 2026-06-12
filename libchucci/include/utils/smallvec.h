@@ -3,10 +3,11 @@
 
 
 #include <stddef.h>
+#include <stdint.h>
 #include <assert.h>
 
 #define SMALLVEC_RESIZE_RATIO 2
-#define SMALLVEC_DEFAULT_CAP 8
+#define SMALLVEC_DEFAULT_CAP 4
 
 #ifdef SMALLVEC_DEBUG
 #define SMALLVEC_DEBUG_FIELD size_t resize_count;
@@ -20,7 +21,7 @@
 #define SMALLVEC_DEBUG_LOG_RESIZES(name, vec)
 #endif
 
-#define SMALLVEC_DEF(T, name, prefix)\
+#define SMALLVEC_DEF(T, name, prefix, alloc_int)\
 typedef struct name {\
   union {\
     T* data;\

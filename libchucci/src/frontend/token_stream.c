@@ -3,10 +3,12 @@
 #include "frontend/lexer.h"
 #include "frontend/token.h"
 #include "utils/chucci_alloc.h"
+#include "utils/diagnostics.h"
 #include "utils/smallvec.h"
+#include "utils/string.h"
 
 SMALLVEC_IMPL(TokenStream, TokenStreamStack, ts_stack, VMEM_ARENA_ALLOC_INT)
-SMALLVEC_IMPL(Token, TokenVec, tokenvec, VMEM_ARENA_ALLOC_INT)
+VEC_IMPL(Token, TokenVec, tokenvec, VMEM_ARENA_ALLOC_INT)
 
 Token ts_stack_next_token(TokenStreamStack *stack, CompilerCtx *ctx) {
   assert(stack->len > 0);
@@ -53,4 +55,55 @@ Token ts_next_token(TokenStream *ts, CompilerCtx *ctx) {
 void ts_free(TokenStream *ts, CompilerCtx *ctx) {
   if (ts->kind == TS_VEC)
     tokenvec_free(&ts->vec, ctx);
+}
+
+Token ts_peek_token(TokenStream *ts, CompilerCtx *ctx) {
+  if (ts->kind == TS_LEXER) {
+    Token token = lex_peek_token(ts->lexer, ctx);
+    return token;
+  } else {
+    assert(ts->pos < ts->vec.len);
+    Token token = tokenvec_access(&ts->vec, ts->pos);
+    return token;
+  }
+}
+
+Token ts_stack_peek_token(TokenStreamStack *stack, CompilerCtx *ctx) {
+  assert(stack->len > 0);
+  Token token = ts_peek_token(ts_stack_top_ptr(stack), ctx);
+  size_t i = 0;
+  while (token.kind == TOK_EOF && stack->len - i > 1) {
+    token =
+        ts_peek_token(ts_stack_access_ptr(stack, stack->len - (++i) - 1), ctx);
+  }
+  return token;
+}
+
+Token ts_expect_token(TokenStream *ts, CompilerCtx *ctx, TokenKind kind) {
+  Token token = ts_next_token(ts, ctx);
+  if (token.kind != kind) {
+    DIAGID diag = diagnostic_new(ctx->engine, token.span, ERR_UNEXPECTED_TOKEN);
+    DIAGID note =
+        subdiagnostic_new(diag, ctx->engine, token.span, NOTE_EXPECTED_TOKEN);
+    diag_set_format(ctx->engine, note,
+                    "%[file](%[row]:%[col]): %[level]: %[msg] %[0]");
+    diag_add_arg(ctx->engine, note,
+                 diagarg_sv(cstr_to_sv((char *)tok_to_str[kind])));
+  }
+  return token;
+}
+
+Token ts_stack_expect_token(TokenStreamStack *stack, CompilerCtx *ctx,
+                            TokenKind kind) {
+  Token token = ts_stack_next_token(stack, ctx);
+  if (token.kind != kind) {
+    DIAGID diag = diagnostic_new(ctx->engine, token.span, ERR_UNEXPECTED_TOKEN);
+    DIAGID note =
+        subdiagnostic_new(diag, ctx->engine, token.span, NOTE_EXPECTED_TOKEN);
+    diag_set_format(ctx->engine, note,
+                    "%[file](%[row]:%[col]): %[level]: %[msg] %[0]\n");
+    diag_add_arg(ctx->engine, note,
+                 diagarg_sv(cstr_to_sv((char *)tok_to_str[kind])));
+  }
+  return token;
 }
