@@ -103,12 +103,33 @@ void diag_set_format(DiagnosticEngine *engine, DIAGID diagid,
   diag->emit_format = format;
 }
 
+void handle_operators(Diagnostic *diag, StringView format_code,
+                      size_t format_code_base_len, size_t *num) {
+  StringView op_sv;
+  op_sv.cstr = format_code.cstr + format_code_base_len;
+  op_sv.len = format_code.len - format_code_base_len;
+  while (op_sv.len != 0) {
+    if (op_sv.cstr[0] == '*' && op_sv.len >= 2) {
+      size_t i = *num;
+      while (i--)
+        putchar(op_sv.cstr[1]);
+      op_sv.len -= 2;
+      op_sv.cstr += 2;
+    }
+    // post-decrement
+    if (op_sv.cstr[0] == '-' && op_sv.len >= 2 && op_sv.cstr[1] == '-') {
+      (*num)--;
+      op_sv.len -= 2;
+      op_sv.cstr += 2;
+    }
+  }
+}
+
 // handle %[numerical-type*^] etc...
 void print_handle_numerical(Diagnostic *diag, StringView format_code,
-                            size_t num) {
-  if (format_code.len > 2 && format_code.cstr[format_code.len - 2] == '*') {
-    while (num--)
-      putchar((unsigned char)format_code.cstr[format_code.len - 1]);
+                            size_t num, size_t format_code_base_len) {
+  if (format_code_base_len < format_code.len) {
+    handle_operators(diag, format_code, format_code_base_len, &num);
   } else {
     printf("%zu", num);
   }
@@ -127,31 +148,24 @@ void print_arg(DiagnosticArg *arg) {
   }
 }
 
+#define NUMERICAL_FORMAT_CODES(X, start, diag)                                 \
+  X("row", start.line)                                                         \
+  X("col", start.col)                                                          \
+  X("span-start-diff", start.col - 1)                                          \
+  X("span-width", diag->span.len)
+
 void print_format_code(Diagnostic *diag, StringView format_code) {
   // Numerical type
   static CursorMark start;
-  if (sv_startswith_cstr(format_code, "row")) {
-    if (start.id != diag->span.start)
-      start = span_start(diag->span);
-    print_handle_numerical(diag, format_code, start.line);
-    return;
+  if (start.id != diag->span.start)
+    start = span_start(diag->span);
+#define X(str, num)                                                            \
+  if (sv_startswith_cstr(format_code, str)) {                                  \
+    print_handle_numerical(diag, format_code, num, sizeof(str) - 1);           \
+    return;                                                                    \
   }
-  if (sv_startswith_cstr(format_code, "col")) {
-    if (start.id != diag->span.start)
-      start = span_start(diag->span);
-    print_handle_numerical(diag, format_code, start.col);
-    return;
-  }
-  if (sv_startswith_cstr(format_code, "span-start-diff")) {
-    if (start.id != diag->span.start)
-      start = span_start(diag->span);
-    print_handle_numerical(diag, format_code, start.col - 1);
-    return;
-  }
-  if (sv_startswith_cstr(format_code, "span-width")) {
-    print_handle_numerical(diag, format_code, diag->span.len);
-    return;
-  }
+  NUMERICAL_FORMAT_CODES(X, start, diag)
+#undef X
 
   // String type
   if (anystr_eq(format_code, const_cstr_to_sv("level"))) {

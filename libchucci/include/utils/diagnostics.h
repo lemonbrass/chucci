@@ -54,7 +54,7 @@
   "%[file] (%[row]:%[col]): %[level]: %[msg]\n"                                \
   "Initiated by %[cfile]:%[cline]\n"                                           \
   "%[span-line]\n"                                                             \
-  "%[span-start-diff* ]%[span-width*^]\n"
+  "%[span-start-diff* ]^%[span-width--*~]\n"
 
 // X(ERROR, message, default severity, phase)
 #define DIAGNOSTICS(X)                                                         \
