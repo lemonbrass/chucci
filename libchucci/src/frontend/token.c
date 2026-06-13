@@ -48,7 +48,8 @@ Token new_tok_simple(Span span, TokenKind kind) {
 }
 
 void print_token(Token *token) {
-  StringView str = token_to_str(token);
+  StringView str = span_to_sv(token->span);
+  printf("%s: ", tok_to_str[token->kind]);
   anystr_print(str);
 }
 void print_token_pretty(Token *token) {

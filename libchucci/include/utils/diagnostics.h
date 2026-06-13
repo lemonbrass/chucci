@@ -26,8 +26,9 @@
   %[row]       : row-id in input source code (the line)
   %[col]       : col-id in input source code
   %[span-start-diff* ] : prints (span id - line start id) spaces
-  %[span-width*^]      : printf span width amount of ^ (you can use any character instead of ^)
-  
+  %[span-width*^]      : printf span width amount of ^ (you can use any
+  character instead of ^)
+
   Currently we use the X-Macro DIAGNOSTICS(X), for a easy way to add new
   diagnostics.
 */
@@ -44,10 +45,16 @@
 #define MAX_DIAGNOSTICS 8
 #define MAX_DIAGNOSTIC_ARGS 4
 
-#define DEFAULT_FORMATTING "%[file] (%[row]:%[col]): %[level]: %[msg]\n"\
-                           "Initiated by %[cfile]:%[cline]\n"\
-                           "%[span-line]\n"\
-                           "%[span-start-diff* ]%[span-width*^]\n"
+#define RED "\033[31m"
+#define YELLOW "\033[33m"
+#define BLUE "\033[34m"
+#define COLOR_RESET "\033[0m"
+
+#define DEFAULT_FORMATTING                                                     \
+  "%[file] (%[row]:%[col]): %[level]: %[msg]\n"                                \
+  "Initiated by %[cfile]:%[cline]\n"                                           \
+  "%[span-line]\n"                                                             \
+  "%[span-start-diff* ]%[span-width*^]\n"
 
 // X(ERROR, message, default severity, phase)
 #define DIAGNOSTICS(X)                                                         \
@@ -59,15 +66,17 @@
     SL_ERROR, PHASE_LEXER)                                                     \
   X(ERR_UNEXPECTED_TOKEN_AFTER_OP_PREPROCESS, "Unexpected token after #",      \
     SL_ERROR, PHASE_PREPROCESSOR)                                              \
-  X(ERR_UNEXPECTED_TOKEN, "Unexpected token", SL_ERROR, PHASE_ANY)         \
-  X(NOTE_EXPECTED_TOKEN, "Expected", SL_NOTE, PHASE_ANY)
+  X(ERR_UNEXPECTED_TOKEN, "Unexpected token", SL_ERROR, PHASE_ANY)             \
+  X(NOTE_EXPECTED_TOKEN, "Expected", SL_NOTE, PHASE_ANY)                       \
+  X(ERR_INVALID_MACRO_DEF, "Invalid macro definition syntax", SL_ERROR,        \
+    PHASE_PREPROCESSOR)
 
 #define SEVERITY_LEVEL(X)                                                      \
   X(SL_IGNORED, "ignored")                                                     \
-  X(SL_NOTE, "note")                                                           \
-  X(SL_WARNING, "warning")                                                     \
-  X(SL_ERROR, "error")                                                         \
-  X(SL_FATAL, "fatal error")
+  X(SL_NOTE, BLUE "note" COLOR_RESET)                                          \
+  X(SL_WARNING, YELLOW "warning" COLOR_RESET)                                  \
+  X(SL_ERROR, RED "error" COLOR_RESET)                                         \
+  X(SL_FATAL, RED "fatal error" COLOR_RESET)
 
 typedef enum DiagnosticID {
 #define X(a, msg, sl, ph) a,
@@ -148,22 +157,25 @@ extern DiagnosticBase id_to_diagnostic[];
 #define subdiagnostic_new(parent, engine, span, id)                            \
   _subdiagnostic_new((parent), (engine), (span), (id), __FILE__, __LINE__)
 
-#define diagarg_num(_num) (DiagnosticArg){.kind = DA_INT, .num = (_num)}
-#define diagarg_sv(_sv) (DiagnosticArg){.kind = DA_STRVIEW, .sv = (_sv)}
+#define diagarg_num(_num)                                                      \
+  (DiagnosticArg) { .kind = DA_INT, .num = (_num) }
+#define diagarg_sv(_sv)                                                        \
+  (DiagnosticArg) { .kind = DA_STRVIEW, .sv = (_sv) }
 
 // By default sets the msg, phase, and severity level etc based on the X-MACRO
 // DIAGNOSTICS(X)
 DIAGID _diagnostic_new(DiagnosticEngine *engine, Span span, DiagnosticID id,
-                     const char *cfile, int cline);
+                       const char *cfile, int cline);
 DIAGID _subdiagnostic_new(DIAGID parent, DiagnosticEngine *engine, Span span,
-                        DiagnosticID id, const char *cfile, int cline);
+                          DiagnosticID id, const char *cfile, int cline);
 
 // same functions for both diagnostics and subdiagnostics
 #define subdiag_add_arg diag_add_arg
 #define subdiag_set_format diag_set_format
 #define subdiagnostic_emit diagnostic_emit
 void diag_add_arg(DiagnosticEngine *engine, DIAGID diagid, DiagnosticArg arg);
-void diag_set_format(DiagnosticEngine *engine, DIAGID diagid, const char *format);
+void diag_set_format(DiagnosticEngine *engine, DIAGID diagid,
+                     const char *format);
 void diagnostic_emit(Diagnostic *diag);
 void diagnostics_emit(DiagnosticEngine *engine);
 void print_formatted(Diagnostic *diag, const char *format_str);

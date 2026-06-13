@@ -32,9 +32,10 @@ Lexer *lexer_new(CompilerCtx *ctx) {
 }
 
 Token lex_op_sep(Lexer *lexer, CompilerCtx *ctx, char ch) {
+  Span span = span_from_cursor(cursor(lexer), 1);
 #define X(kind, str, ch1)                                                      \
   if (ch1 == ch && cursor_match_str(cursor(lexer), cstr_to_sv(str)))           \
-    return new_tok_simple(span_from_cursor(cursor(lexer), 1), kind);
+    return new_tok_simple(span, kind);
   OPERATORS(X)
   SEPARATORS(X)
 #undef X
@@ -111,8 +112,7 @@ Token lex_ident(Lexer *lexer, CompilerCtx *ctx, char ch) {
 
 #define X(kind, str)                                                           \
   if (keyword_to_id[kind] == id)                                               \
-    return new_tok_simple(span_from_cursor(cursor(lexer), sizeof(str) - 1),    \
-                          kind);
+    return new_tok_simple(span_from_mark(cursor(lexer), mark1, mark2), kind);
   KEYWORDS(X)
 #undef X
 
@@ -166,12 +166,13 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
     }
   }
   if (ch == '\0') {
+    Span span = span_from_cursor(cursor(lexer), 1);
     if (ctx->sources.len > 1) {
       filevec_pop(&ctx->sources);
       lexer->cursor = cursor_new(current_source(lexer, ctx));
       return lex_next_token(lexer, ctx);
     }
-    return new_tok_simple(span_from_cursor(cursor(lexer), 1), TOK_EOF);
+    return new_tok_simple(span, TOK_EOF);
   }
   if (ch == '\\' && cursor_peek_next(cursor(lexer))) {
     cursor_advance(cursor(lexer)); // skip '\'
@@ -179,8 +180,9 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
     return lex_next_token(lexer, ctx);
   }
   if (ch == '\n') {
+    Span span = span_from_cursor(cursor(lexer), 1);
     cursor_advance(cursor(lexer));
-    return new_tok_simple(span_from_cursor(cursor(lexer), 1), SEP_NEWLINE);
+    return new_tok_simple(span, SEP_NEWLINE);
   }
   if (isalpha((unsigned char)ch) || ch == '_')
     return lex_ident(lexer, ctx, ch);
