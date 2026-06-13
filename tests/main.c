@@ -7,10 +7,15 @@ jmp_buf onerror;
 
 int main() {
   CompilerCtx *ctx = compiler_new(&onerror);
-  char *source = "int // \n x_y_haha = \"HUiHUi\" /* ohhh yeahhh */ #define "
-                 "69 01\n; \\\n int x "
-                 "= 1.1.1 / 1; 1.2.34.4;";
-  File file = {.contents = cstr_to_str(source),
+  char *source =
+      "int z = 1.1.2.3.4;\n"
+      "int x_y = z;\n"
+      "/*this is ignored HHAHHAHAHAHH I CAN SAY WHATEVER AND YOU WONT HEAR*/"
+      "#define x 69\n"
+      "#define y 67\n"
+      "#define 69 x\n"
+      "#define 67 y\n";
+  File file = {.contents = cstr_to_sv(source),
                .name = const_cstr_to_sv("scratch")};
 
   cc_add_source(ctx, file);

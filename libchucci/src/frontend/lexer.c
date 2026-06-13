@@ -46,21 +46,24 @@ Token lex_num(Lexer *lexer, CompilerCtx *ctx) {
   char ch = cursor_advance(cursor(lexer));
   ch = cursor_peek(cursor(lexer));
   bool is_float = false;
+  bool has_error = false;
   while (true) {
     char _ch = cursor_peek(cursor(lexer));
     if (!isdigit(_ch) && _ch != '.')
       break;
     if (ch == '.') {
-      if (is_float) {
-        CursorMark mark2 = cursor_mark(cursor(lexer));
-        diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
-                       ERR_INVALID_NUMERIC_LITERAL);
-      }
+      if (is_float)
+        has_error = true;
       is_float = true;
     }
     ch = cursor_advance(cursor(lexer));
   }
   CursorMark mark2 = get_cursor_mark(lexer);
+
+  if (has_error) {
+    diagnostic_new(ctx->engine, span_from_mark(cursor(lexer), mark1, mark2),
+                   ERR_INVALID_NUMERIC_LITERAL);
+  }
 
   StringView lexeme = cursor_slice(cursor(lexer), mark1.id, mark2.id);
   return new_tok_val(span_from_mark(cursor(lexer), mark1, mark2));
@@ -164,7 +167,6 @@ Token lex_next_token(Lexer *lexer, CompilerCtx *ctx) {
   }
   if (ch == '\0') {
     if (ctx->sources.len > 1) {
-      file_free(filevec_top_ptr(&ctx->sources));
       filevec_pop(&ctx->sources);
       lexer->cursor = cursor_new(current_source(lexer, ctx));
       return lex_next_token(lexer, ctx);

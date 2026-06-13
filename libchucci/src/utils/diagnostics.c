@@ -5,7 +5,6 @@
 #include "utils/vec.h"
 #include "utils/vmem_arena.h"
 #include <assert.h>
-#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -47,9 +46,22 @@ Diagnostic *diag_get(DIAGID diagid, DiagnosticEngine *engine) {
   }
 }
 
+void shorten_cfile_path(const char **cfile) {
+  static size_t offset = 0;
+  if (offset != 0)
+    *cfile += offset;
+  else {
+    while (
+        !sv_startswith_cstr(cstr_to_sv((char *)*cfile + offset), "libchucci"))
+      offset++;
+    *cfile += offset;
+  }
+}
+
 DIAGID _diagnostic_new(DiagnosticEngine *engine, Span span, DiagnosticID id,
                        const char *cfile, int cline) {
   Diagnostic diag = {0};
+  shorten_cfile_path(&cfile);
   diag.cfile = cfile;
   diag.cline = cline;
   diag.base = &id_to_diagnostic[id];
@@ -81,7 +93,7 @@ DIAGID _subdiagnostic_new(DIAGID parent_diagid, DiagnosticEngine *engine,
 
 void diag_add_arg(DiagnosticEngine *engine, DIAGID diagid, DiagnosticArg arg) {
   Diagnostic *diag = diag_get(diagid, engine);
-  assert(diag->arg_len <= MAX_DIAGNOSTIC_ARGS);
+  assert(diag->arg_len < MAX_DIAGNOSTIC_ARGS);
   diag->args[diag->arg_len++] = arg;
 }
 
@@ -95,7 +107,7 @@ void diag_set_format(DiagnosticEngine *engine, DIAGID diagid,
 void print_handle_numerical(Diagnostic *diag, StringView format_code,
                             size_t num) {
   if (format_code.len > 2 && format_code.cstr[format_code.len - 2] == '*') {
-    while (--num + 1 > 0)
+    while (num--)
       putchar((unsigned char)format_code.cstr[format_code.len - 1]);
   } else {
     printf("%zu", num);
@@ -117,18 +129,22 @@ void print_arg(DiagnosticArg *arg) {
 
 void print_format_code(Diagnostic *diag, StringView format_code) {
   // Numerical type
+  static CursorMark start;
   if (sv_startswith_cstr(format_code, "row")) {
-    CursorMark start = span_start(diag->span);
+    if (start.id != diag->span.start)
+      start = span_start(diag->span);
     print_handle_numerical(diag, format_code, start.line);
     return;
   }
   if (sv_startswith_cstr(format_code, "col")) {
-    CursorMark start = span_start(diag->span);
+    if (start.id != diag->span.start)
+      start = span_start(diag->span);
     print_handle_numerical(diag, format_code, start.col);
     return;
   }
   if (sv_startswith_cstr(format_code, "span-start-diff")) {
-    CursorMark start = span_start(diag->span);
+    if (start.id != diag->span.start)
+      start = span_start(diag->span);
     print_handle_numerical(diag, format_code, start.col - 1);
     return;
   }
@@ -155,12 +171,16 @@ void print_format_code(Diagnostic *diag, StringView format_code) {
     anystr_print(diag->span.source->name);
     return;
   }
-
-  char *end_ptr = format_code.cstr + format_code.len - 1;
-  errno = 0;
-  long num = strtol(format_code.cstr, &end_ptr, 10);
-
-  if (errno == 0 && *end_ptr == ']' && num <= MAX_DIAGNOSTIC_ARGS) {
+  if (anystr_eq(format_code, const_cstr_to_sv("cfile"))) {
+    printf("%s", diag->cfile);
+    return;
+  }
+  if (anystr_eq(format_code, const_cstr_to_sv("cline"))) {
+    printf("%d", diag->cline);
+    return;
+  }
+  if (format_code.len == 1 && isdigit(format_code.cstr[0])) {
+    uint8_t num = format_code.cstr[0] - '0';
     print_arg(&diag->args[num]);
     return;
   }
