@@ -54,6 +54,7 @@ void cc_compile(CompilerCtx *ctx) {
 }
 
 void cc_free(CompilerCtx *ctx) {
+  pp_free(ctx->preprocessor);
   interner_free(ctx->interner);
   diagnostic_engine_free(ctx->engine);
   filevec_free(&ctx->sources, &ctx->arena);

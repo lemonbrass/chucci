@@ -1,6 +1,7 @@
 #include "utils/vmem_arena.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #if defined(__unix__) || defined(__APPLE__)
@@ -19,19 +20,18 @@
 #define DEFAULT_ALIGNMENT 8
 
 VMEMArena *vmarena_new(size_t cap) {
-  VMEMArena arena = {0};
-  arena.cap = cap;
+  VMEMArena *arena = malloc(sizeof(VMEMArena));
+  arena->pos = 0;
+  arena->cap = cap;
 #if defined(__unix__) || defined(__APPLE__)
-  arena.data = mmap(NULL, cap, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  arena->data = mmap(NULL, cap, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 #elif defined(_WIN32)
-  arena.data =
+  arena->data =
       VirtualAlloc(NULL, cap, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
   assert(arena.data);
 #endif
-  arena.pos += sizeof(VMEMArena);
-  *(VMEMArena *)arena.data = arena;
-  return (VMEMArena *)arena.data;
+  return arena;
 }
 
 void *_vmarena_alloc(VMEMArena *arena, size_t size) {
@@ -79,4 +79,5 @@ void vmarena_free(VMEMArena *arena) {
 #elif defined(_WIN32)
   assert(VirtualFree(arena->data, 0, MEM_RELEASE) != 0);
 #endif
+  free(arena);
 }
