@@ -103,8 +103,8 @@ void diag_set_format(DiagnosticEngine *engine, DIAGID diagid,
   diag->emit_format = format;
 }
 
-void handle_operators(Diagnostic *diag, StringView format_code,
-                      size_t format_code_base_len, size_t *num) {
+void handle_numerical_operators(Diagnostic *diag, StringView format_code,
+                                size_t format_code_base_len, size_t *num) {
   StringView op_sv;
   op_sv.cstr = format_code.cstr + format_code_base_len;
   op_sv.len = format_code.len - format_code_base_len;
@@ -118,7 +118,13 @@ void handle_operators(Diagnostic *diag, StringView format_code,
     }
     // post-decrement
     if (op_sv.cstr[0] == '-' && op_sv.len >= 2 && op_sv.cstr[1] == '-') {
-      (*num)--;
+      if (*num >= 1)
+        (*num)--;
+      else {
+        printf("Error printing diagnostics: trying to decrement a 0 (unsigned "
+               "integer overflow).\n");
+        assert(false);
+      }
       op_sv.len -= 2;
       op_sv.cstr += 2;
     }
@@ -129,9 +135,35 @@ void handle_operators(Diagnostic *diag, StringView format_code,
 void print_handle_numerical(Diagnostic *diag, StringView format_code,
                             size_t num, size_t format_code_base_len) {
   if (format_code_base_len < format_code.len) {
-    handle_operators(diag, format_code, format_code_base_len, &num);
+    handle_numerical_operators(diag, format_code, format_code_base_len, &num);
   } else {
     printf("%zu", num);
+  }
+}
+
+void handle_string_operators(Diagnostic *diag, StringView format_code,
+                             size_t format_code_base_len, StringView *sv) {
+  StringView op_sv;
+  op_sv.cstr = format_code.cstr + format_code_base_len;
+  op_sv.len = format_code.len - format_code_base_len;
+  while (op_sv.len != 0) {
+    if (sv_startswith_cstr(op_sv, ".len")) {
+      op_sv.cstr += sizeof(".len") - 1;
+      op_sv.len -= sizeof(".len") - 1;
+      size_t len = sv->len;
+      handle_numerical_operators(diag, format_code, format_code.len - op_sv.len,
+                                 &len);
+      break;
+    }
+  }
+}
+
+void print_handle_string(Diagnostic *diag, StringView format_code,
+                         StringView sv, size_t format_code_base_len) {
+  if (format_code_base_len < format_code.len) {
+    handle_string_operators(diag, format_code, format_code_base_len, &sv);
+  } else {
+    anystr_print(sv);
   }
 }
 
@@ -152,7 +184,14 @@ void print_arg(DiagnosticArg *arg) {
   X("row", start.line)                                                         \
   X("col", start.col)                                                          \
   X("span-start-diff", start.col - 1)                                          \
-  X("span-width", diag->span.len)
+  X("span-width", diag->span.len)                                              \
+  X("cline", diag->cline)
+
+#define STRING_FORMAT_CODES(X, start, diag)                                    \
+  X("level", cstr_to_sv((char *)slevel_to_cstr[diag->base->level]))            \
+  X("span-line", span_curr_line(diag->span))                                   \
+  X("file", diag->span.source->name)                                           \
+  X("cfile", cstr_to_sv((char *)diag->cfile))
 
 void print_format_code(Diagnostic *diag, StringView format_code) {
   // Numerical type
@@ -167,30 +206,17 @@ void print_format_code(Diagnostic *diag, StringView format_code) {
   NUMERICAL_FORMAT_CODES(X, start, diag)
 #undef X
 
-  // String type
-  if (anystr_eq(format_code, const_cstr_to_sv("level"))) {
-    printf("%s", slevel_to_cstr[diag->base->level]);
-    return;
+// String type
+#define X(code, sv)                                                            \
+  if (sv_startswith_cstr(format_code, code)) {                                 \
+    print_handle_string(diag, format_code, sv, sizeof(code) - 1);              \
+    return;                                                                    \
   }
-  if (anystr_eq(format_code, const_cstr_to_sv("msg"))) {
+  STRING_FORMAT_CODES(X, start, diag)
+#undef X
+
+  if (sv_startswith_cstr(format_code, "msg")) {
     print_formatted(diag, diag->base->msg.cstr);
-    return;
-  }
-  if (anystr_eq(format_code, const_cstr_to_sv("span-line"))) {
-    StringView curr_line = span_curr_line(diag->span);
-    anystr_print(curr_line);
-    return;
-  }
-  if (anystr_eq(format_code, const_cstr_to_sv("file"))) {
-    anystr_print(diag->span.source->name);
-    return;
-  }
-  if (anystr_eq(format_code, const_cstr_to_sv("cfile"))) {
-    printf("%s", diag->cfile);
-    return;
-  }
-  if (anystr_eq(format_code, const_cstr_to_sv("cline"))) {
-    printf("%d", diag->cline);
     return;
   }
   if (format_code.len == 1 && isdigit(format_code.cstr[0])) {

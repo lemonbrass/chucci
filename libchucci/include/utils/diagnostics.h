@@ -43,7 +43,7 @@
 #include <stdint.h>
 
 #define MAX_DIAGNOSTICS 8
-#define MAX_DIAGNOSTIC_ARGS 4
+#define MAX_DIAGNOSTIC_ARGS 6
 
 #define RED "\033[31m"
 #define YELLOW "\033[33m"
@@ -69,7 +69,13 @@
   X(ERR_UNEXPECTED_TOKEN, "Unexpected token", SL_ERROR, PHASE_ANY)             \
   X(NOTE_EXPECTED_TOKEN, "Expected", SL_NOTE, PHASE_ANY)                       \
   X(ERR_INVALID_MACRO_DEF, "Invalid macro definition syntax", SL_ERROR,        \
-    PHASE_PREPROCESSOR)
+    PHASE_PREPROCESSOR)                                                        \
+  X(ERR_DIFF_FNLIKE_MACRO_ARGS, "Expected %[0] arguments, found %[1]",         \
+    SL_ERROR, PHASE_PREPROCESSOR)                                              \
+  X(NOTE_MACRO_DEFINED_HERE, "Macro %[0] defined in %[1]:(%[2]:%[3])",         \
+    SL_NOTE, PHASE_PREPROCESSOR)                                               \
+  X(ERR_INVALID_FNLIKE_MACRO_USE, "Invalid function like macro use syntax",    \
+    SL_ERROR, PHASE_PREPROCESSOR)
 
 #define SEVERITY_LEVEL(X)                                                      \
   X(SL_IGNORED, "ignored")                                                     \
