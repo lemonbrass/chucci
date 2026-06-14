@@ -39,14 +39,15 @@ void cc_compile(CompilerCtx *ctx) {
   Token token = {0};
   while (token.kind != TOK_EOF) {
     token = pp_next_token(ctx->preprocessor, ctx);
-    printf("Token: ");
     print_token_pretty(&token);
-    printf("\n");
+    printf(" ");
     if (has_fatal_diagnostics(ctx->engine)) {
+      printf("\n");
       diagnostics_emit(ctx->engine);
       longjmp(*ctx->onerror, 1);
     }
   }
+  printf("\n");
   if (has_diagnostics(ctx->engine)) {
     diagnostics_emit(ctx->engine);
     longjmp(*ctx->onerror, 1);

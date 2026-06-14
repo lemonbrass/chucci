@@ -96,7 +96,6 @@ void macro_def(Preprocessor *pp, CompilerCtx *ctx, Token token) {
     return;
   }
   macrodefmap_set(&pp->macros, def.name.ident, def, ctx->arena);
-  print_macro_def(pp, ctx, &def);
 }
 
 void note_macro_defined_here(DIAGID diag, CompilerCtx *ctx, MacroDef *def) {
