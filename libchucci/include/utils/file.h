@@ -11,4 +11,6 @@ typedef struct File {
 
 SMALLVEC_DEF(File, FileVec, filevec, VMEM_ARENA_ALLOC_INT);
 
+File file_new(StringView contents, StringView filename);
+
 #endif

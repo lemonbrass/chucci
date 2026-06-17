@@ -2,6 +2,7 @@
 #define CURSOR_H
 
 #include "utils/file.h"
+#include "utils/vmem_arena.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <utils/string.h>
@@ -68,6 +69,7 @@ StringView cursor_slice(Cursor *cursor, idx_t start, idx_t end);
 
 Span span_from_mark(Cursor *cursor, CursorMark start, CursorMark end);
 Span span_from_cursor(Cursor *cursor, idx_t len);
+Span span_from_sv(VMEMArena *arena, StringView sv, idx_t start);
 
 CursorMark span_start(Span span);
 

@@ -44,7 +44,7 @@ T* prefix##_top_ptr(name* vec);\
 T* prefix##_access_ptr(name* vec, size_t i);\
 void prefix##_push(name* vec, T val, void* ctx);\
 
-#define SMALLVEC_DEF_WITH_FIELDS(T, name, prefix, fields)\
+#define SMALLVEC_DEF_WITH_FIELDS(T, name, prefix, alloc_int, fields)\
 typedef struct name {\
   union {\
     T* data;\
@@ -55,6 +55,7 @@ typedef struct name {\
     uint64_t cap : 63;\
     uint64_t is_static : 1;\
   };\
+  fields\
   SMALLVEC_DEBUG_FIELD\
 } name;\
 name prefix##_new();\

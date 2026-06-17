@@ -1,18 +1,23 @@
-#include "compiler.h"
-#include "utils/string.h"
 #include <setjmp.h>
 #include <stdio.h>
+
+#include "compiler.h"
+#include "utils/string.h"
 
 jmp_buf onerror;
 
 int main() {
-  CompilerCtx *ctx = compiler_new(&onerror);
-  char *source =
+  CompilerCtx* ctx = compiler_new(&onerror);
+  char* source =
       "int z = 1.1.2.3.4;\n"
       "int x_y = z;\n"
       "/*this is ignored HHAHHAHAHAHH I CAN SAY WHATEVER AND YOU WONT HEAR*/\n"
       "#define x 69\n"
-      "#define y(a, b) a + b\n"
+      "#define y(a, b) ((a) + (b))\n"
+      "#define stick(a, b) a##b\n"
+      "#define stringify(a) #a\n"
+      "stick(haha, huhu);\n"
+      "stringify(ahahhahaa);\n"
       "print(x + y(1 + 2, 2));\n"
       "#define 69 x\n"
       "#define 67 y\n";

@@ -27,7 +27,7 @@ typedef struct TokenStream {
   };
 } TokenStream;
 
-SMALLVEC_DEF(TokenStream, TokenStreamStack, ts_stack, VMEM_ARENA_ALLOC_INT);
+SMALLVEC_DEF_WITH_FIELDS(TokenStream, TokenStreamStack, ts_stack, VMEM_ARENA_ALLOC_INT, bool is_consumed;);
 
 TokenStream ts_from_lexer(Lexer *lexer);
 TokenStream ts_from_vec(TokenVec vec);
@@ -39,5 +39,7 @@ Token ts_stack_expect_token(TokenStreamStack *stack, CompilerCtx *ctx, TokenKind
 Token ts_stack_peek_token(TokenStreamStack *stack, CompilerCtx *ctx);
 Token ts_stack_next_token(TokenStreamStack *stack, CompilerCtx *ctx);
 void ts_free(TokenStream *ts, CompilerCtx *ctx);
+
+void unexpected_token_err(CompilerCtx *ctx, Token unexpected, TokenKind expected);
 
 #endif

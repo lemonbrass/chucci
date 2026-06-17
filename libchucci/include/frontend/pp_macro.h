@@ -20,8 +20,10 @@ typedef struct MacroDef {
 } MacroDef;
 
 // links arg_name to passed tokens
-LINEAR_MAP_DEF(StringID, TokenVec, MacroArgMap, macroargmap, VMEM_ARENA_ALLOC_INT)
-LINEAR_MAP_DEF(StringID, MacroDef, MacroDefMap, macrodefmap, VMEM_ARENA_ALLOC_INT)
+LINEAR_MAP_DEF(StringID, TokenVec, MacroArgMap, macroargmap,
+               VMEM_ARENA_ALLOC_INT)
+LINEAR_MAP_DEF(StringID, MacroDef, MacroDefMap, macrodefmap,
+               VMEM_ARENA_ALLOC_INT)
 
 typedef struct MacroUseStream {
   MacroDef *def;
@@ -31,14 +33,10 @@ typedef struct MacroUseStream {
   bool _is_arg;
 } MacroUseStream;
 
-
 Token mu_next_token(TokenStream *ts, CompilerCtx *ctx);
 Token mu_peek_token(TokenStream *ts, CompilerCtx *ctx);
 void macro_def(Preprocessor *pp, CompilerCtx *ctx, Token token);
-TokenStream macro_use(Preprocessor *pp, CompilerCtx *ctx, Token name, MacroDef *def);
-
-
-
-
+TokenStream macro_use(Preprocessor *pp, CompilerCtx *ctx, Token name,
+                      MacroDef *def);
 
 #endif
