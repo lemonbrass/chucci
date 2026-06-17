@@ -11,6 +11,7 @@ struct Preprocessor {
   VMEMArena *arena;
   MacroDefMap macros;
   TokenStreamStack streams;
+  bool is_consumed;
 };
 
 // Even though CompilerCtx has a Lexer, I added the Lexer* argument

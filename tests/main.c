@@ -16,7 +16,7 @@ int main() {
       "#define y(a, b) ((a) + (b))\n"
       "#define stick(a, b) a##b\n"
       "#define stringify(a) #a\n"
-      "stick(haha, huhu);\n"
+      "stick(haha, uhu);\n"
       "stringify(ahahhahaa);\n"
       "print(x + y(1 + 2, 2));\n"
       "#define 69 x\n"
@@ -27,11 +27,9 @@ int main() {
   cc_add_source(ctx, file);
 
   if (setjmp(onerror) == 0) {
-    printf("Compiling input: \n{\n%s\n}\n", source);
+    printf("INPUT {\n%s\n}\n", source);
     cc_preamble(ctx);
     cc_compile(ctx);
-  } else {
-    // error
   }
   printf("Arena allocated: %zu/%zu\n", ctx->arena->pos, ctx->arena->cap);
   cc_free(ctx);

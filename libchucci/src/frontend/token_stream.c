@@ -4,6 +4,7 @@
 #include "compiler.h"
 #include "frontend/lexer.h"
 #include "frontend/pp_macro.h"
+#include "frontend/preprocessor.h"
 #include "frontend/token.h"
 #include "frontend/token_stream.h"
 #include "utils/chucci_alloc.h"
@@ -39,6 +40,14 @@ TokenStream ts_from_lexer(Lexer* lexer) {
   return ts;
 }
 
+TokenStream ts_from_preprocessor(Preprocessor* pp) {
+  TokenStream ts = {0};
+  ts.is_consumed = false;
+  ts.kind = TS_PREPROCESSOR;
+  ts.pp = pp;
+  return ts;
+}
+
 TokenStream ts_from_macro_use(MacroUseStream* macro_use) {
   TokenStream ts = {0};
   ts.is_consumed = false;
@@ -58,19 +67,29 @@ TokenStream ts_from_vec(TokenVec vec) {
 
 Token ts_next_token(TokenStream* ts, CompilerCtx* ctx) {
   assert(!ts->is_consumed && "ts_next_token on a consumed tokenstream");
-  if (ts->kind == TS_LEXER) {
-    Token token = lex_next_token(ts->lexer, ctx);
-    if (token.kind == TOK_EOF) ts->is_consumed = true;
-    return token;
-  } else if (ts->kind == TS_VEC) {
-    Token token = tokenvec_access(&ts->vec, ts->pos++);
-    if (token.kind == TOK_EOF) ts->is_consumed = true;
-    if (ts->pos >= ts->vec.len) ts->is_consumed = true;
-    return token;
-  } else if (ts->kind == TS_MACRO_USE) {
-    return mu_next_token(ts, ctx);
+  switch (ts->kind) {
+    case TS_LEXER: {
+      Token token = lex_next_token(ts->lexer, ctx);
+      if (token.kind == TOK_EOF) ts->is_consumed = true;
+      return token;
+    }
+    case TS_VEC: {
+      Token token = tokenvec_access(&ts->vec, ts->pos++);
+      if (token.kind == TOK_EOF) ts->is_consumed = true;
+      if (ts->pos >= ts->vec.len) ts->is_consumed = true;
+      return token;
+    }
+    case TS_MACRO_USE: {
+      return mu_next_token(ts, ctx);
+    }
+    case TS_PREPROCESSOR: {
+      Token token = pp_next_token(ts->pp, ctx);
+      if (token.kind == TOK_EOF) ts->is_consumed = true;
+      return token;
+    }
+    default:
+      assert(false && "Unexpected token stream");
   }
-  assert(false);
 }
 
 void ts_free(TokenStream* ts, CompilerCtx* ctx) {
@@ -79,17 +98,22 @@ void ts_free(TokenStream* ts, CompilerCtx* ctx) {
 
 Token ts_peek_token(TokenStream* ts, CompilerCtx* ctx) {
   assert(!ts->is_consumed && "ts_peek_token on a consumed tokenstream");
-  if (ts->kind == TS_LEXER) {
-    Token token = lex_peek_token(ts->lexer, ctx);
-    return token;
-  } else if (ts->kind == TS_VEC) {
-    assert(ts->pos < ts->vec.len);
-    Token token = tokenvec_access(&ts->vec, ts->pos);
-    return token;
-  } else if (ts->kind == TS_MACRO_USE) {
-    return mu_peek_token(ts, ctx);
+  switch (ts->kind) {
+    case TS_LEXER: {
+      Token token = lex_peek_token(ts->lexer, ctx);
+      return token;
+    }
+    case TS_VEC: {
+      assert(ts->pos < ts->vec.len);
+      Token token = tokenvec_access(&ts->vec, ts->pos);
+      return token;
+    }
+    case TS_MACRO_USE: {
+      return mu_peek_token(ts, ctx);
+    }
+    default:
+      assert(false && "Unexpected token stream");
   }
-  assert(false);
 }
 
 Token ts_stack_peek_token(TokenStreamStack* stack, CompilerCtx* ctx) {

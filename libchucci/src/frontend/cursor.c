@@ -123,6 +123,7 @@ bool cursor_match_ch(Cursor* cursor, char expected) {
 }
 
 bool is_cursor_valid(Cursor* cursor) {
+  assert(cursor->source);
   return cursor->source->contents.len > cursor->id;
 }
 

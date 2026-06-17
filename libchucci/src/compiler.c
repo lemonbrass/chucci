@@ -1,9 +1,12 @@
 #include <setjmp.h>
+#include <stdio.h>
 
 #include "compiler.h"
+#include "frontend/cursor.h"
 #include "frontend/lexer.h"
 #include "frontend/preprocessor.h"
 #include "frontend/token.h"
+#include "frontend/token_stream.h"
 #include "utils/chucci_alloc.h"
 #include "utils/diagnostics.h"
 #include "utils/file.h"
@@ -37,10 +40,11 @@ void cc_preamble(CompilerCtx* ctx) {
 void cc_compile(CompilerCtx* ctx) {
   assert(ctx->sources.len > 0);
   // Testing code for now, till compiler is complete
-  Token token = {0};
-  while (token.kind != TOK_EOF) {
-    token = pp_next_token(ctx->preprocessor, ctx);
-    print_token_pretty(&token);
+  printf("OUTPUT {\n");
+  TokenStream stream = ts_from_preprocessor(ctx->preprocessor);
+  while (!stream.is_consumed) {
+    Token token = ts_next_token(&stream, ctx);
+    anystr_print(span_to_sv(token.span));
     if (token.kind == SEP_SEMI)
       printf("\n");
     else
@@ -51,6 +55,7 @@ void cc_compile(CompilerCtx* ctx) {
       longjmp(*ctx->onerror, 1);
     }
   }
+  printf("\n}\n");
   printf("\n\n");
   if (has_diagnostics(ctx->engine)) {
     diagnostics_emit(ctx->engine);

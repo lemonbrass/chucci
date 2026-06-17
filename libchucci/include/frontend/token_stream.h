@@ -10,6 +10,7 @@ VEC_DEF(Token, TokenVec, tokenvec, VMEM_ARENA_ALLOC_INT)
 typedef enum TokenStreamKind {
   TS_VEC,
   TS_LEXER,
+  TS_PREPROCESSOR,
   TS_MACRO_USE,
 } TokenStreamKind;
 
@@ -19,6 +20,7 @@ typedef struct TokenStream {
   bool is_consumed;
   union {
     Lexer *lexer;
+    Preprocessor *pp;
     struct {
       TokenVec vec;
       size_t pos;
@@ -30,6 +32,7 @@ typedef struct TokenStream {
 SMALLVEC_DEF_WITH_FIELDS(TokenStream, TokenStreamStack, ts_stack, VMEM_ARENA_ALLOC_INT, bool is_consumed;);
 
 TokenStream ts_from_lexer(Lexer *lexer);
+TokenStream ts_from_preprocessor(Preprocessor *pp);
 TokenStream ts_from_vec(TokenVec vec);
 TokenStream ts_from_macro_use(MacroUseStream *macro_use);
 Token ts_next_token(TokenStream *ts, CompilerCtx *ctx);

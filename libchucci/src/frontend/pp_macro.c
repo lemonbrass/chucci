@@ -220,18 +220,31 @@ Token mu_token_paste(TokenStream* ts, CompilerCtx* ctx, Token token1,
   char buf[1024] = {0};
   StringView token1_str = get_interned_sv(ctx->interner, token1.ident);
   StringView token2_str = get_interned_sv(ctx->interner, token2.ident);
-  printf("Pasting: \n");
-  anystr_println(token1_str);
-  anystr_println(token2_str);
   size_t len = token1_str.len + token2_str.len;
   memcpy(buf, token1_str.cstr, token1_str.len);
   memcpy(buf + token1_str.len, token2_str.cstr, token2_str.len);
-  printf("Pasted: %.*s\n", len, buf);
   StringID ident = intern(sv_new(buf, len), ctx->interner);
   StringView result = get_interned_sv(ctx->interner, ident);
-  printf("Result: %.*s\n", result.len, result.cstr);
   Span span = span_from_sv(ctx->arena, result, 0);
+  assert(result.cstr == span_to_sv(span).cstr &&
+         result.len == span_to_sv(span).len);
   return new_tok_ident(span, ident);
+}
+
+Token mu_check_token_paste(TokenStream* ts, CompilerCtx* ctx, Token token) {
+  if (token.kind != TOK_IDENT) {
+    return token;
+  }
+  Token next = mu_peek_token(ts, ctx);
+  if (next.kind != OP_TOKEN_PASTE) {
+    return token;
+  }
+  mu_next_token(ts, ctx);  // skip ##
+  Token token2 = mu_next_token(ts, ctx);
+  if (token2.kind != TOK_IDENT) {
+    unexpected_token_err(ctx, token2, TOK_IDENT);
+  }
+  return mu_token_paste(ts, ctx, token, token2);
 }
 
 Token mu_fnlike_next_token(TokenStream* ts, CompilerCtx* ctx) {
@@ -241,7 +254,10 @@ Token mu_fnlike_next_token(TokenStream* ts, CompilerCtx* ctx) {
   // If the top of the stream is an argument, send it without intercepting
   // for arguments
   if (mu->_is_arg) {
-    if (mu->streams.len == 1) mu->_is_arg = false;
+    if (mu->streams.len == 1) {
+      mu->_is_arg = false;
+      return mu_check_token_paste(ts, ctx, token);
+    }
     return token;
   }
   // If token is a newline, macro has been consumed
@@ -266,8 +282,9 @@ Token mu_fnlike_next_token(TokenStream* ts, CompilerCtx* ctx) {
   // Stringify
   if (token.kind == OP_PREPROCESS) return mu_stringify_token(ts, ctx);
 
-  // Else just return the token
-  return token;
+  // Returns the input token if token pasting isnt detected
+  // else, token pastes and returns token
+  return mu_check_token_paste(ts, ctx, token);
 }
 
 Token mu_next_token(TokenStream* ts, CompilerCtx* ctx) {
