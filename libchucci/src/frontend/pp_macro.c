@@ -71,6 +71,7 @@ void macro_def_args(Preprocessor* pp, CompilerCtx* ctx, MacroDef* def,
 
 void macro_def(Preprocessor* pp, CompilerCtx* ctx, Token token) {
   MacroDef def = {0};
+  def.is_expanding = false;
   def.name = ts_stack_expect_token(stack(pp), ctx, TOK_IDENT);
   Token next = ts_stack_peek_token(stack(pp), ctx);
   bool has_error = def.name.kind != TOK_IDENT;
@@ -147,8 +148,8 @@ MacroArgMap fnlike_macro_use_args(Preprocessor* pp, CompilerCtx* ctx,
                                   Token name, MacroDef* def) {
   MacroArgMap map = macroargmap_new();
   TokenVec arg = tokenvec_new();
-  Token next = ts_stack_expect_token(&pp->streams, ctx, SEP_LPAREN);  // skip (
-  next = ts_stack_next_token(&pp->streams, ctx);
+  ts_stack_expect_token(&pp->streams, ctx, SEP_LPAREN);  // skip (
+  Token next = ts_stack_next_token(&pp->streams, ctx);
   size_t arg_idx = 0;
   bool expect_comma = false;
   if (def->args.len == 0) return map;
@@ -182,6 +183,11 @@ MacroArgMap fnlike_macro_use_args(Preprocessor* pp, CompilerCtx* ctx,
 
 TokenStream macro_use(Preprocessor* pp, CompilerCtx* ctx, Token name,
                       MacroDef* def) {
+  if (def->is_expanding) {
+    TokenStream ts = ts_from_token(name);
+    return ts;
+  }
+  def->is_expanding = true;
   if (def->is_fnlike) {
     MacroUseStream* mu = vmarena_calloc(pp->arena, sizeof(MacroUseStream));
     mu->arena = pp->arena;

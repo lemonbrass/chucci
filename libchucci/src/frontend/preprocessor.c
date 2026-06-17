@@ -57,7 +57,7 @@ Token pp_next_token(Preprocessor* pp, CompilerCtx* ctx) {
     // Macro use
     case TOK_IDENT: {
       MacroDef* def = macrodefmap_get(&pp->macros, token.ident);
-      if (def) {
+      if (def && !def->is_expanding) {
         TokenStream ts = macro_use(pp, ctx, token, def);
         ts_stack_push(&pp->streams, ts, ctx->arena);
         return pp_next_token(pp, ctx);

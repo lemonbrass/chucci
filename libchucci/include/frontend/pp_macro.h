@@ -16,6 +16,7 @@ typedef struct MacroDef {
   TokenVec body;
   StringIDVec args;
   bool is_fnlike;
+  bool is_expanding;
   Span span;
 } MacroDef;
 

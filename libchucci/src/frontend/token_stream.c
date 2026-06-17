@@ -56,6 +56,15 @@ TokenStream ts_from_macro_use(MacroUseStream* macro_use) {
   return ts;
 }
 
+TokenStream ts_from_token(Token token) {
+  TokenStream ts = {0};
+  ts.is_consumed = false;
+  ts.kind = TS_SINGLE;
+  ts.single = token;
+  ts.pos = 0;
+  return ts;
+}
+
 TokenStream ts_from_vec(TokenVec vec) {
   TokenStream ts = {0};
   ts.is_consumed = false;
@@ -87,6 +96,10 @@ Token ts_next_token(TokenStream* ts, CompilerCtx* ctx) {
       if (token.kind == TOK_EOF) ts->is_consumed = true;
       return token;
     }
+    case TS_SINGLE: {
+      ts->is_consumed = true;
+      return ts->single;
+    }
     default:
       assert(false && "Unexpected token stream");
   }
@@ -94,6 +107,7 @@ Token ts_next_token(TokenStream* ts, CompilerCtx* ctx) {
 
 void ts_free(TokenStream* ts, CompilerCtx* ctx) {
   if (ts->kind == TS_VEC) tokenvec_free(&ts->vec, ctx);
+  if (ts->kind == TS_MACRO_USE) ts->macro_use->def->is_expanding = false;
 }
 
 Token ts_peek_token(TokenStream* ts, CompilerCtx* ctx) {
@@ -110,6 +124,9 @@ Token ts_peek_token(TokenStream* ts, CompilerCtx* ctx) {
     }
     case TS_MACRO_USE: {
       return mu_peek_token(ts, ctx);
+    }
+    case TS_SINGLE: {
+      return ts->single;
     }
     default:
       assert(false && "Unexpected token stream");

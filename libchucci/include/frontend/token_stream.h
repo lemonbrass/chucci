@@ -12,6 +12,7 @@ typedef enum TokenStreamKind {
   TS_LEXER,
   TS_PREPROCESSOR,
   TS_MACRO_USE,
+  TS_SINGLE, // single token
 } TokenStreamKind;
 
 typedef struct MacroUseStream MacroUseStream;
@@ -25,6 +26,7 @@ typedef struct TokenStream {
       TokenVec vec;
       size_t pos;
     };
+    Token single;
     MacroUseStream *macro_use;
   };
 } TokenStream;
@@ -35,6 +37,7 @@ TokenStream ts_from_lexer(Lexer *lexer);
 TokenStream ts_from_preprocessor(Preprocessor *pp);
 TokenStream ts_from_vec(TokenVec vec);
 TokenStream ts_from_macro_use(MacroUseStream *macro_use);
+TokenStream ts_from_token(Token token);
 Token ts_next_token(TokenStream *ts, CompilerCtx *ctx);
 Token ts_peek_token(TokenStream *ts, CompilerCtx *ctx);
 Token ts_expect_token(TokenStream *ts, CompilerCtx *ctx, TokenKind kind);

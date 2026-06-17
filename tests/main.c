@@ -12,6 +12,8 @@ int main() {
       "int z = 1.1.2.3.4;\n"
       "int x_y = z;\n"
       "/*this is ignored HHAHHAHAHAHH I CAN SAY WHATEVER AND YOU WONT HEAR*/\n"
+      "#define X X\n"
+      "X;\n"
       "#define x 69\n"
       "#define y(a, b) ((a) + (b))\n"
       "#define stick(a, b) a##b\n"
